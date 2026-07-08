@@ -2,25 +2,35 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1c1a4a;
+
+  /* SkyFots Global Logistics brand palette, sourced from skyfotsglobal.com */
+  --color-navy: #00032a;
+  --color-navy-light: #0e104b;
+  --color-red: #c8361d;
+  --color-red-light: #dd2c0e;
+  --color-sky: #29abe2;
+  --color-yellow: #ffb930;
+  --color-body: #4c4c5b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-navy: var(--color-navy);
+  --color-navy-light: var(--color-navy-light);
+  --color-red: var(--color-red);
+  --color-red-light: var(--color-red-light);
+  --color-sky: var(--color-sky);
+  --color-yellow: var(--color-yellow);
+  --color-body: var(--color-body);
+
+  --font-sans: var(--font-sarabun);
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-body);
+  font-family: var(--font-sans), sans-serif;
 }
