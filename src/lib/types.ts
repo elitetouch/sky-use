@@ -41,6 +41,73 @@ export type Shipment = {
   updated_at: string;
 };
 
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  status: string;
+  roles: string[];
+  created_at: string;
+};
+
+export type AdminShipment = Shipment & {
+  courier: string | null;
+  courier_label: string | null;
+  courier_tracking_number: string | null;
+  user?: User;
+};
+
+export type PricingRule = {
+  id: string;
+  service_level: string;
+  mode: string;
+  base_fee_kobo: number;
+  per_kg_kobo: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Staff = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  status: string;
+  roles: string[];
+  created_at: string;
+};
+
+export type StaffInvitation = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  invited_by: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  is_expired: boolean;
+  created_at: string;
+};
+
+export type Role = {
+  id: number;
+  name: string;
+  permissions: string[];
+  is_protected: boolean;
+};
+
+export type DashboardMetrics = {
+  shipments_total: number;
+  shipments_by_status: Record<string, number>;
+  shipments_delivered_this_month: number;
+  revenue_this_month_kobo: number;
+  customers_total: number;
+  staff_total: number;
+  pending_invitations: number;
+};
+
 export type PaginatedResult<T> = {
   items: T[];
   meta: {
