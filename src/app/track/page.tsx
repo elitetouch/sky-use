@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { TrackLookup } from "./track-lookup";
@@ -19,7 +20,9 @@ export default function TrackPage() {
           <p className="mt-2 text-body">Enter your tracking number to see the latest status.</p>
 
           <div className="mt-8">
-            <TrackLookup />
+            <Suspense>
+              <TrackLookup />
+            </Suspense>
           </div>
         </div>
       </main>

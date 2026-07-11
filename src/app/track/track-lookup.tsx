@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 
 type StatusEvent = {
@@ -23,19 +24,19 @@ type Shipment = {
 };
 
 export function TrackLookup() {
-  const [trackingNumber, setTrackingNumber] = useState("");
+  const searchParams = useSearchParams();
+  const [trackingNumber, setTrackingNumber] = useState(searchParams.get("number") ?? "");
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
+  const lookup = useCallback(async (number: string) => {
     setError(null);
     setShipment(null);
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/tracking/${encodeURIComponent(trackingNumber.trim())}`);
+      const response = await fetch(`/api/tracking/${encodeURIComponent(number.trim())}`);
       const json = await response.json();
 
       if (!response.ok) {
@@ -47,6 +48,21 @@ export function TrackLookup() {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const number = searchParams.get("number");
+    if (number) {
+      // Fetching on mount based on a URL param is the standard escape hatch here;
+      // eslint-plugin-react-hooks's set-state-in-effect check flags it anyway.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      lookup(number);
+    }
+  }, [searchParams, lookup]);
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    await lookup(trackingNumber);
   }
 
   return (
