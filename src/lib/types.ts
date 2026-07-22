@@ -51,11 +51,25 @@ export type User = {
   created_at: string;
 };
 
+export type Office = {
+  id: string;
+  name: string;
+  address: string;
+  terms_and_conditions: string | null;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AdminShipment = Shipment & {
   courier: string | null;
   courier_label: string | null;
   courier_tracking_number: string | null;
+  payment_method: string | null;
+  payment_method_label: string | null;
   user?: User;
+  booked_by?: string | null;
+  office?: Office | null;
 };
 
 export type PricingRule = {
