@@ -4,7 +4,11 @@ export class ApiError extends Error {
   status: number;
   errors: Record<string, string[]>;
 
-  constructor(status: number, message: string, errors: Record<string, string[]> = {}) {
+  constructor(
+    status: number,
+    message: string,
+    errors: Record<string, string[]> = {},
+  ) {
     super(message);
     this.status = status;
     this.errors = errors;
@@ -43,7 +47,9 @@ export async function apiFetch<T>(
     return undefined as T;
   }
 
-  const json = (await response.json().catch(() => null)) as ApiEnvelope<T> | null;
+  const json = (await response
+    .json()
+    .catch(() => null)) as ApiEnvelope<T> | null;
 
   if (!response.ok || !json) {
     throw new ApiError(
