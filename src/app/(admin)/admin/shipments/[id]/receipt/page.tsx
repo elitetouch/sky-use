@@ -176,19 +176,42 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
           {/* Footer */}
           <footer className="mt-10 border-t pt-6 text-sm text-gray-600">
-            <h2 className="font-bold text-navy">Terms & Conditions</h2>
+            <div className="grid gap-6 sm:grid-cols-2">
+              {/* Office Details */}
+              <section>
+                <h2 className="font-bold text-navy">Office</h2>
 
-            <ul className="mt-3 list-disc space-y-1 pl-5">
-              <li>Keep this receipt until delivery is completed.</li>
+                <div className="mt-3 space-y-1">
+                  <p className="font-semibold">
+                    {shipment.office?.name ?? "Skyfots Global"}
+                  </p>
 
-              <li>Sender is responsible for proper packaging.</li>
+                  {shipment.office?.address && <p>{shipment.office.address}</p>}
+                </div>
+              </section>
 
-              <li>Claims must be reported within 48 hours.</li>
+              {/* Contact */}
+              <section>
+                <h2 className="font-bold text-navy">Contact</h2>
 
-              <li>Dangerous or prohibited goods will not be accepted.</li>
+                <div className="mt-3 space-y-1">
+                  {shipment.office?.phone && (
+                    <p>Phone: {shipment.office.phone}</p>
+                  )}
+                </div>
+              </section>
+            </div>
 
-              <li>Delivery timelines may vary due to external factors.</li>
-            </ul>
+            {/* Terms */}
+            {shipment.office?.terms_and_conditions && (
+              <section className="mt-8">
+                <h2 className="font-bold text-navy">Terms & Conditions</h2>
+
+                <div className="mt-3 whitespace-pre-line">
+                  {shipment.office.terms_and_conditions}
+                </div>
+              </section>
+            )}
 
             <p className="mt-8 text-center font-semibold text-navy">
               Thank you for choosing Skyfots Global.
