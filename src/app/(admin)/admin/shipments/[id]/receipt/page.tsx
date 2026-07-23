@@ -29,7 +29,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
         {/* Watermark Logo */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.08]">
           <Image
-            src="/logo.png"
+            src="brand/skyfots-logo.png"
             alt=""
             width={420}
             height={420}
@@ -42,7 +42,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
           {/* Header */}
           <div className="border-b pb-6 text-center">
             <Image
-              src="/logo.png"
+              src="brand/skyfots-logo.png"
               alt="Skyfots Global"
               width={220}
               height={90}
