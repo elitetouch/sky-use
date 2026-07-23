@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { PrintButton } from "@/components/admin/PrintButton";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
@@ -24,126 +25,176 @@ export default async function ShipmentReceiptPage({ params }: Props) {
         <PrintButton />
       </div>
 
-      <div className="mx-auto max-w-4xl rounded-xl border bg-white p-8 shadow-lg print:max-w-none print:rounded-none print:border-0 print:shadow-none">
-        {/* Header */}
-        <div className="border-b pb-6 text-center">
-          <h1 className="text-3xl font-bold text-navy">SKYFOTS GLOBAL</h1>
+      <div className="relative mx-auto max-w-4xl rounded-xl border bg-white p-8 shadow-lg print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+        {/* Watermark Logo */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.08]">
+          <Image
+            src="/logo.png"
+            alt=""
+            width={420}
+            height={420}
+            className="object-contain"
+          />
+        </div>
 
-          <p className="text-sm text-gray-500">Logistics & Courier Services</p>
+        {/* Receipt Content */}
+        <div className="relative z-10">
+          {/* Header */}
+          <div className="border-b pb-6 text-center">
+            <Image
+              src="/logo.png"
+              alt="Skyfots Global"
+              width={220}
+              height={90}
+              className="mx-auto object-contain"
+            />
 
-          <div className="mt-4">
-            <p className="text-sm text-gray-500">Tracking Number</p>
-
-            <p className="text-xl font-bold text-navy">
-              {shipment.tracking_number}
+            <p className="mt-2 text-sm text-gray-500">
+              Logistics & Courier Services
             </p>
 
-            <span className="mt-2 inline-block rounded-full bg-navy px-4 py-1 text-sm text-white">
-              {shipment.status_label}
-            </span>
+            <div className="mt-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Tracking Number
+              </p>
+
+              <p className="text-xl font-bold text-navy">
+                {shipment.tracking_number}
+              </p>
+
+              <span className="mt-3 inline-block rounded-full bg-navy px-4 py-1.5 text-sm font-semibold text-white">
+                {shipment.status_label}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Customer */}
-        <section className="mt-6">
-          <h2 className="font-bold text-navy">Customer</h2>
+          {/* Customer */}
+          <section className="mt-6">
+            <h2 className="text-sm font-bold uppercase text-navy">Customer</h2>
 
-          <p>{shipment.user?.name}</p>
-          <p>{shipment.user?.email}</p>
-          <p>{shipment.user?.phone}</p>
-        </section>
+            <div className="mt-2 text-sm text-gray-700">
+              <p className="font-semibold">{shipment.user?.name}</p>
 
-        {/* Addresses */}
-        <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          <section className="rounded-lg border p-4">
-            <h2 className="font-bold text-navy">Sender</h2>
+              <p>{shipment.user?.email}</p>
 
-            <p>{shipment.sender_address?.contact_name}</p>
-            <p>{shipment.sender_address?.phone}</p>
-            <p>{shipment.sender_address?.line1}</p>
-            <p>{shipment.sender_address?.city}</p>
+              <p>{shipment.user?.phone}</p>
+            </div>
           </section>
 
-          <section className="rounded-lg border p-4">
-            <h2 className="font-bold text-navy">Receiver</h2>
+          {/* Sender / Receiver */}
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <section className="rounded-lg border p-5">
+              <h2 className="text-sm font-bold uppercase text-navy">From</h2>
 
-            <p>{shipment.receiver_address?.contact_name}</p>
-            <p>{shipment.receiver_address?.phone}</p>
-            <p>{shipment.receiver_address?.line1}</p>
-            <p>{shipment.receiver_address?.city}</p>
+              <div className="mt-3 text-sm text-gray-700">
+                <p className="font-semibold">
+                  {shipment.sender_address?.contact_name}
+                </p>
+
+                <p>{shipment.sender_address?.phone}</p>
+
+                <p className="mt-2">{shipment.sender_address?.line1}</p>
+
+                <p>{shipment.sender_address?.city}</p>
+              </div>
+            </section>
+
+            <section className="rounded-lg border p-5">
+              <h2 className="text-sm font-bold uppercase text-navy">To</h2>
+
+              <div className="mt-3 text-sm text-gray-700">
+                <p className="font-semibold">
+                  {shipment.receiver_address?.contact_name}
+                </p>
+
+                <p>{shipment.receiver_address?.phone}</p>
+
+                <p className="mt-2">{shipment.receiver_address?.line1}</p>
+
+                <p>{shipment.receiver_address?.city}</p>
+              </div>
+            </section>
+          </div>
+
+          {/* Package Details */}
+          <section className="mt-6 rounded-lg border p-5">
+            <h2 className="text-sm font-bold uppercase text-navy">
+              Package Details
+            </h2>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-3 text-sm">
+              <div>
+                <p className="text-gray-500">Service</p>
+
+                <p className="font-semibold capitalize">
+                  {shipment.service_level}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-gray-500">Mode</p>
+
+                <p className="font-semibold capitalize">{shipment.mode}</p>
+              </div>
+
+              <div>
+                <p className="text-gray-500">Weight</p>
+
+                <p className="font-semibold">{shipment.weight_kg} kg</p>
+              </div>
+            </div>
+
+            {shipment.description && (
+              <p className="mt-4 text-sm text-gray-700">
+                Description: {shipment.description}
+              </p>
+            )}
           </section>
+
+          {/* Payment */}
+          <section className="mt-6 rounded-lg bg-gray-50 p-5">
+            <h2 className="text-sm font-bold uppercase text-navy">Payment</h2>
+
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span>Total Cost</span>
+
+                <strong>
+                  {shipment.price_kobo !== null
+                    ? formatNaira(shipment.price_kobo)
+                    : "—"}
+                </strong>
+              </div>
+
+              <div className="flex justify-between">
+                <span>Payment Status</span>
+
+                <strong>{shipment.paid_at ? "Paid" : "Unpaid"}</strong>
+              </div>
+            </div>
+          </section>
+
+          {/* Footer */}
+          <footer className="mt-10 border-t pt-6 text-sm text-gray-600">
+            <h2 className="font-bold text-navy">Terms & Conditions</h2>
+
+            <ul className="mt-3 list-disc space-y-1 pl-5">
+              <li>Keep this receipt until delivery is completed.</li>
+
+              <li>Sender is responsible for proper packaging.</li>
+
+              <li>Claims must be reported within 48 hours.</li>
+
+              <li>Dangerous or prohibited goods will not be accepted.</li>
+
+              <li>Delivery timelines may vary due to external factors.</li>
+            </ul>
+
+            <p className="mt-8 text-center font-semibold text-navy">
+              Thank you for choosing Skyfots Global.
+            </p>
+          </footer>
         </div>
-
-        {/* Package */}
-        <section className="mt-6 rounded-lg border p-4">
-          <h2 className="font-bold text-navy">Package Details</h2>
-
-          <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Service</p>
-              <p className="font-semibold">{shipment.service_level}</p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">Mode</p>
-              <p className="font-semibold">{shipment.mode}</p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">Weight</p>
-              <p className="font-semibold">{shipment.weight_kg} kg</p>
-            </div>
-          </div>
-
-          {shipment.description && (
-            <p className="mt-4">Description: {shipment.description}</p>
-          )}
-        </section>
-
-        {/* Payment */}
-        <section className="mt-6 rounded-lg bg-gray-50 p-5">
-          <h2 className="font-bold text-navy">Payment</h2>
-
-          <div className="mt-3 flex justify-between">
-            <span>Total Cost</span>
-
-            <strong>
-              {shipment.price_kobo !== null
-                ? formatNaira(shipment.price_kobo)
-                : "—"}
-            </strong>
-          </div>
-
-          <div className="mt-2 flex justify-between">
-            <span>Status</span>
-
-            <strong>{shipment.paid_at ? "Paid" : "Unpaid"}</strong>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="mt-10 border-t pt-6 text-sm text-gray-500">
-          <h3 className="font-bold text-navy">Terms & Conditions</h3>
-
-          <ul className="mt-3 list-disc space-y-1 pl-5">
-            <li>Keep this receipt until delivery is completed.</li>
-
-            <li>Goods must be properly packaged by the sender.</li>
-
-            <li>Claims must be reported within 48 hours.</li>
-
-            <li>Prohibited items will not be accepted.</li>
-
-            <li>
-              Delivery timelines may vary due to circumstances beyond our
-              control.
-            </li>
-          </ul>
-
-          <p className="mt-6 text-center">
-            Thank you for choosing Skyfots Global.
-          </p>
-        </footer>
       </div>
     </main>
   );
