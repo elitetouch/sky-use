@@ -1,3 +1,5 @@
+import { PrintButton } from "@/components/admin/PrintButton";
+
 type Props = {
   params: Promise<{
     id: string;
@@ -14,12 +16,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
         <p className="mt-4">Shipment ID: {id}</p>
 
-        <button
-          className="mt-6 rounded-lg bg-navy px-4 py-2 text-white"
-          onClick={() => window.print()}
-        >
-          Print Receipt
-        </button>
+        <PrintButton />
       </div>
     </main>
   );
