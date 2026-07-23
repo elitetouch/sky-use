@@ -191,7 +191,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
               </section>
 
               {/* Contact */}
-              <section>
+              {/* <section>
                 <h2 className="font-bold text-navy">Contact</h2>
 
                 <div className="mt-3 space-y-1">
@@ -199,7 +199,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
                     <p>Phone: {shipment.office.phone}</p>
                   )}
                 </div>
-              </section>
+              </section> */}
             </div>
 
             {/* Terms */}
