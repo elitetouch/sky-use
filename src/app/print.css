@@ -1,0 +1,53 @@
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /*
+   * Hide dashboard chrome
+   */
+  .print-hidden {
+    display: none !important;
+  }
+
+  /*
+   * Receipt should occupy the page
+   */
+  .receipt-container {
+    width: 100%;
+    max-width: none !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /*
+   * Remove decorative styles
+   */
+  .receipt-card {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /*
+   * Avoid awkward page breaks
+   */
+  table,
+  tr,
+  td,
+  section {
+    page-break-inside: avoid;
+  }
+
+  button {
+    display: none !important;
+  }
+}

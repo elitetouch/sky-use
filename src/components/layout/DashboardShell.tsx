@@ -20,7 +20,7 @@ export function DashboardShell({
 }) {
   return (
     <div className="flex min-h-screen bg-[#f7f7f8]">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-black/5 bg-white md:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-black/5 bg-white md:flex print:hidden">
         <div className="border-b border-black/5 px-6 py-5">
           <Logo />
         </div>
@@ -38,20 +38,22 @@ export function DashboardShell({
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-black/5 bg-white px-6 py-4">
+        <header className="flex items-center justify-between border-b border-black/5 bg-white px-6 py-4 print:hidden">
           <div className="md:hidden">
             <Logo />
           </div>
           <div className="ml-auto flex items-center gap-4">
             <div className="text-right">
               <p className="text-sm font-semibold text-navy">{user.name}</p>
-              <p className="text-xs capitalize text-body">{user.roles.join(", ")}</p>
+              <p className="text-xs capitalize text-body">
+                {user.roles.join(", ")}
+              </p>
             </div>
             <LogoutButton />
           </div>
         </header>
 
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6 print:p-0 print:bg-white">{children}</main>
       </div>
     </div>
   );
