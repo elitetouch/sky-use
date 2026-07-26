@@ -19,9 +19,7 @@ export default async function DashboardPage() {
   ]);
 
   const recentShipments = shipments.items.slice(0, 5);
-  const inTransitCount = shipments.items.filter(
-    (s) => !["delivered", "cancelled"].includes(s.status),
-  ).length;
+  const inTransitCount = shipments.items.filter((s) => !s.is_delivered).length;
 
   return (
     <div>

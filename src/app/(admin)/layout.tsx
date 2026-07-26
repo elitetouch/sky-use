@@ -8,6 +8,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/shipments", label: "Shipments" },
   { href: "/admin/shipments/new", label: "Book Shipment" },
   { href: "/admin/pricing", label: "Pricing Rules" },
+  { href: "/admin/status-templates", label: "Status Milestones" },
   { href: "/admin/offices", label: "Offices" },
   { href: "/admin/staff", label: "Staff" },
   { href: "/admin/customers", label: "Customers" },

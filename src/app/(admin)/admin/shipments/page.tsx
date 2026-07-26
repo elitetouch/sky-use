@@ -2,53 +2,35 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import type { AdminShipment, PaginatedResult } from "@/lib/types";
+import type { AdminShipment, PaginatedResult, StatusTemplate } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
+import { ShipmentStatusFilter } from "@/components/admin/ShipmentStatusFilter";
 
 export const metadata: Metadata = {
   title: "Shipments",
 };
 
-const STATUSES = ["pending", "picked_up", "in_transit", "out_for_delivery", "delivered", "cancelled"];
-
 export default async function AdminShipmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status_template_id?: string }>;
 }) {
-  const { status } = await searchParams;
+  const { status_template_id: statusTemplateId } = await searchParams;
   const token = await getSessionToken();
 
-  const query = status ? `?filter[status]=${status}` : "";
-  const { items: shipments } = await apiFetch<PaginatedResult<AdminShipment>>(`/admin/shipments${query}`, {
-    token: token!,
-  });
+  const query = statusTemplateId ? `?filter[status_template_id]=${statusTemplateId}` : "";
+  const [{ items: shipments }, templates] = await Promise.all([
+    apiFetch<PaginatedResult<AdminShipment>>(`/admin/shipments${query}`, { token: token! }),
+    apiFetch<StatusTemplate[]>("/admin/status-templates?active_only=1", { token: token! }),
+  ]);
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-navy">Shipments</h1>
       <p className="mt-1 text-body">All shipments booked across the platform.</p>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href="/admin/shipments"
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            !status ? "bg-navy text-white" : "border border-navy/20 text-navy"
-          }`}
-        >
-          All
-        </Link>
-        {STATUSES.map((s) => (
-          <Link
-            key={s}
-            href={`/admin/shipments?status=${s}`}
-            className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${
-              status === s ? "bg-navy text-white" : "border border-navy/20 text-navy"
-            }`}
-          >
-            {s.replace(/_/g, " ")}
-          </Link>
-        ))}
+      <div className="mt-4 max-w-sm">
+        <ShipmentStatusFilter templates={templates} selectedId={statusTemplateId ?? ""} />
       </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-black/5">

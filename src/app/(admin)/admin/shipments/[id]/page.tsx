@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import type { AdminShipment } from "@/lib/types";
+import type { AdminShipment, StatusTemplate } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { UpdateStatusForm } from "@/components/admin/UpdateStatusForm";
 import { AssignCourierForm } from "@/components/admin/AssignCourierForm";
@@ -26,6 +26,8 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
 
     throw error;
   }
+
+  const templates = await apiFetch<StatusTemplate[]>("/admin/status-templates?active_only=1", { token: token! });
 
   return (
     <div>
@@ -99,6 +101,16 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
                   <p className="text-sm font-semibold text-navy">{event.label}</p>
                   {event.location ? <p className="text-xs text-body">{event.location}</p> : null}
                   {event.note ? <p className="text-xs text-body">{event.note}</p> : null}
+                  {event.link ? (
+                    <a
+                      href={event.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 inline-block break-all text-xs font-semibold text-red hover:underline"
+                    >
+                      {event.link}
+                    </a>
+                  ) : null}
                   <p className="mt-1 text-xs text-body/70">{new Date(event.created_at).toLocaleString()}</p>
                 </li>
               ))}
@@ -117,7 +129,11 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
             </p>
           </div>
 
-          <UpdateStatusForm shipmentId={shipment.id} currentStatus={shipment.status} />
+          <UpdateStatusForm
+            shipmentId={shipment.id}
+            currentTemplateId={shipment.status_template_id}
+            templates={templates}
+          />
           <AssignCourierForm
             shipmentId={shipment.id}
             currentCourier={shipment.courier}

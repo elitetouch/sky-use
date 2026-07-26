@@ -70,6 +70,16 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
                   <p className="text-sm font-semibold text-navy">{event.label}</p>
                   {event.location ? <p className="text-xs text-body">{event.location}</p> : null}
                   {event.note ? <p className="text-xs text-body">{event.note}</p> : null}
+                  {event.link ? (
+                    <a
+                      href={event.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 inline-block break-all text-xs font-semibold text-red hover:underline"
+                    >
+                      {event.link}
+                    </a>
+                  ) : null}
                   <p className="mt-1 text-xs text-body/70">{new Date(event.created_at).toLocaleString()}</p>
                 </li>
               ))}

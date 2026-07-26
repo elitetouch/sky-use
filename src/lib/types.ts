@@ -13,20 +13,33 @@ export type Address = {
   updated_at: string;
 };
 
+export type StatusTemplate = {
+  id: string;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+  is_delivered: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type StatusEvent = {
   id: string;
-  status: string;
+  status_template_id: string | null;
   label: string;
   location: string | null;
   note: string | null;
+  link: string | null;
   created_at: string;
 };
 
 export type Shipment = {
   id: string;
   tracking_number: string;
-  status: string;
+  status_template_id: string | null;
   status_label: string;
+  is_delivered: boolean;
   service_level: string;
   mode: string;
   weight_kg: string;
