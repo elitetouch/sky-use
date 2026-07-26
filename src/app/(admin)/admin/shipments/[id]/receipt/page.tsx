@@ -29,7 +29,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
         {/* Watermark Logo */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.08]">
           <Image
-            src="brand/skyfots-logo.png"
+            src="/brand/skyfots-logo.png"
             alt=""
             width={420}
             height={420}
@@ -42,7 +42,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
           {/* Header */}
           <div className="border-b pb-6 text-center">
             <Image
-              src="brand/skyfots-logo.png"
+              src="/brand/skyfots-logo.png"
               alt="Skyfots Global"
               width={220}
               height={90}
@@ -171,6 +171,14 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
                 <strong>{shipment.paid_at ? "Paid" : "Unpaid"}</strong>
               </div>
+
+              {shipment.paid_at && shipment.payment_method_label && (
+                <div className="flex justify-between">
+                  <span>Payment Method</span>
+
+                  <strong>{shipment.payment_method_label}</strong>
+                </div>
+              )}
             </div>
           </section>
 

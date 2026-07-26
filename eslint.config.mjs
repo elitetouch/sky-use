@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Mirrored static marketing site (vendored template JS/CSS) served as-is.
+    "public/**",
   ]),
 ]);
 

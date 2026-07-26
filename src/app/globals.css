@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "./print.css";
 
 :root {
   --background: #ffffff;
@@ -42,12 +41,46 @@ body {
     margin: 12mm;
   }
 
+  html,
   body {
-    background: white;
+    background: #fff !important;
+    margin: 0;
+    padding: 0;
   }
 
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Hide dashboard chrome and any print-only-hidden elements */
+  .print-hidden {
+    display: none !important;
+  }
+
+  /* Receipt should occupy the full page without decorative chrome */
+  .receipt-container {
+    width: 100%;
+    max-width: none !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  .receipt-card {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Avoid awkward page breaks mid-section */
+  table,
+  tr,
+  td,
+  section {
+    page-break-inside: avoid;
+  }
+
+  button {
+    display: none !important;
   }
 }
