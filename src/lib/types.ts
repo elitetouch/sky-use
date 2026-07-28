@@ -74,10 +74,23 @@ export type Office = {
   updated_at: string;
 };
 
+export type ShipmentItem = {
+  id: string;
+  description: string;
+  weight_kg: string;
+  cost_kobo: number;
+};
+
 export type AdminShipment = Shipment & {
   courier: string | null;
   courier_label: string | null;
   courier_tracking_number: string | null;
+  carrier: string | null;
+  declared_value_kobo: number | null;
+  handling_kobo: number;
+  freight_kobo: number;
+  insurance_kobo: number;
+  items?: ShipmentItem[];
   payment_method: string | null;
   payment_method_label: string | null;
   user?: User;

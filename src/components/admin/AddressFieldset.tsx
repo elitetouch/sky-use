@@ -8,6 +8,7 @@ export type AddressForm = {
   line2: string;
   city: string;
   state: string;
+  country: string;
 };
 
 export const EMPTY_ADDRESS: AddressForm = {
@@ -18,6 +19,7 @@ export const EMPTY_ADDRESS: AddressForm = {
   line2: "",
   city: "",
   state: "",
+  country: "Nigeria",
 };
 
 export function AddressFieldset({
@@ -57,7 +59,7 @@ export function AddressFieldset({
         <label className="block text-sm font-semibold text-navy">Address line 2 (optional)</label>
         <input value={value.line2} onChange={update("line2")} className={inputClass} />
       </div>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
         <div>
           <label className="block text-sm font-semibold text-navy">City</label>
           <input required value={value.city} onChange={update("city")} className={inputClass} />
@@ -65,6 +67,10 @@ export function AddressFieldset({
         <div>
           <label className="block text-sm font-semibold text-navy">State</label>
           <input required value={value.state} onChange={update("state")} className={inputClass} />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-navy">Country</label>
+          <input required value={value.country} onChange={update("country")} className={inputClass} />
         </div>
       </div>
     </div>

@@ -95,7 +95,12 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
                 <p className="mt-2">{shipment.sender_address?.line1}</p>
 
-                <p>{shipment.sender_address?.city}</p>
+                <p>
+                  {shipment.sender_address?.city}
+                  {shipment.sender_address?.country
+                    ? `, ${shipment.sender_address.country}`
+                    : ""}
+                </p>
               </div>
             </section>
 
@@ -111,7 +116,12 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
                 <p className="mt-2">{shipment.receiver_address?.line1}</p>
 
-                <p>{shipment.receiver_address?.city}</p>
+                <p>
+                  {shipment.receiver_address?.city}
+                  {shipment.receiver_address?.country
+                    ? `, ${shipment.receiver_address.country}`
+                    : ""}
+                </p>
               </div>
             </section>
           </div>
@@ -142,6 +152,24 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
                 <p className="font-semibold">{shipment.weight_kg} kg</p>
               </div>
+
+              {shipment.carrier && (
+                <div>
+                  <p className="text-gray-500">Carrier</p>
+
+                  <p className="font-semibold">{shipment.carrier}</p>
+                </div>
+              )}
+
+              {shipment.declared_value_kobo ? (
+                <div>
+                  <p className="text-gray-500">Declared Value</p>
+
+                  <p className="font-semibold">
+                    {formatNaira(shipment.declared_value_kobo)}
+                  </p>
+                </div>
+              ) : null}
             </div>
 
             {shipment.description && (
@@ -151,13 +179,64 @@ export default async function ShipmentReceiptPage({ params }: Props) {
             )}
           </section>
 
+          {/* Items */}
+          {shipment.items && shipment.items.length > 0 && (
+            <section className="mt-6 rounded-lg border p-5">
+              <h2 className="text-sm font-bold uppercase text-navy">Items</h2>
+
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-gray-500">
+                      <th className="py-2 pr-4 font-semibold">Description</th>
+                      <th className="py-2 pr-4 text-right font-semibold">Weight (kg)</th>
+                      <th className="py-2 text-right font-semibold">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shipment.items.map((item) => (
+                      <tr key={item.id} className="border-b border-gray-100">
+                        <td className="py-2 pr-4 text-gray-700">{item.description}</td>
+                        <td className="py-2 pr-4 text-right text-gray-700">{item.weight_kg}</td>
+                        <td className="py-2 text-right text-gray-700">
+                          {formatNaira(item.cost_kobo)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
           {/* Payment */}
           <section className="mt-6 rounded-lg bg-gray-50 p-5">
             <h2 className="text-sm font-bold uppercase text-navy">Payment</h2>
 
             <div className="mt-4 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span>Total Cost</span>
+              {shipment.handling_kobo > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Handling</span>
+                  <span>{formatNaira(shipment.handling_kobo)}</span>
+                </div>
+              )}
+
+              {shipment.freight_kobo > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Freight Charge</span>
+                  <span>{formatNaira(shipment.freight_kobo)}</span>
+                </div>
+              )}
+
+              {shipment.insurance_kobo > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Insurance Charge</span>
+                  <span>{formatNaira(shipment.insurance_kobo)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between border-t pt-3">
+                <span>Total Amount</span>
 
                 <strong>
                   {shipment.price_kobo !== null
