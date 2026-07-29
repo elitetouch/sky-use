@@ -70,7 +70,7 @@ export function TrackLookup() {
         <input
           value={trackingNumber}
           onChange={(e) => setTrackingNumber(e.target.value)}
-          placeholder="e.g. SKY-ABC1234567"
+          placeholder="e.g. SKY4700239IB"
           required
           className="w-full rounded-lg border border-black/10 px-4 py-3 text-sm text-navy outline-none focus:border-navy sm:flex-1"
         />
