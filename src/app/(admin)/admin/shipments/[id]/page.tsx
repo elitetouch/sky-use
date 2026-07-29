@@ -4,8 +4,11 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import type { AdminShipment, StatusTemplate } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
+import Link from "next/link";
 import { UpdateStatusForm } from "@/components/admin/UpdateStatusForm";
 import { AssignCourierForm } from "@/components/admin/AssignCourierForm";
+import { PaymentStatusForm } from "@/components/admin/PaymentStatusForm";
+import { DeleteShipmentButton } from "@/components/admin/DeleteShipmentButton";
 
 export const metadata: Metadata = {
   title: "Shipment Detail",
@@ -43,10 +46,28 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-body">Tracking Number</p>
           <h1 className="text-2xl font-bold text-navy">{shipment.tracking_number}</h1>
+          <p className="mt-1 text-xs text-body">
+            Booked by {shipment.booked_by ?? "—"}
+            {shipment.updated_by ? ` · Last updated by ${shipment.updated_by}` : ""}
+          </p>
         </div>
-        <span className="rounded-full bg-navy px-4 py-1.5 text-sm font-semibold text-white">
-          {shipment.status_label}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="rounded-full bg-navy px-4 py-1.5 text-sm font-semibold text-white">
+            {shipment.status_label}
+          </span>
+          <Link
+            href={`/admin/shipments/${shipment.id}/edit`}
+            className="rounded-lg border border-navy/20 px-4 py-1.5 text-sm font-semibold text-navy hover:bg-navy hover:text-white"
+          >
+            Edit
+          </Link>
+          <Link
+            href={`/admin/shipments/${shipment.id}/receipt`}
+            className="rounded-lg border border-navy/20 px-4 py-1.5 text-sm font-semibold text-navy hover:bg-navy hover:text-white"
+          >
+            Receipt
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
@@ -132,10 +153,14 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
             <p className="mt-1 text-3xl font-extrabold">
               {shipment.price_kobo !== null ? formatNaira(shipment.price_kobo) : "—"}
             </p>
-            <p className="mt-2 text-sm text-white/70">
-              {shipment.paid_at ? `Paid on ${new Date(shipment.paid_at).toLocaleDateString()}` : "Unpaid"}
-            </p>
           </div>
+
+          <PaymentStatusForm
+            shipmentId={shipment.id}
+            paidAt={shipment.paid_at}
+            paymentMethod={shipment.payment_method}
+            paymentMethodLabel={shipment.payment_method_label}
+          />
 
           <UpdateStatusForm
             shipmentId={shipment.id}
@@ -147,6 +172,8 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
             currentCourier={shipment.courier}
             currentTrackingNumber={shipment.courier_tracking_number}
           />
+
+          <DeleteShipmentButton shipmentId={shipment.id} trackingNumber={shipment.tracking_number} />
         </div>
       </div>
     </div>

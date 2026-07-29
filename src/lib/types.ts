@@ -95,6 +95,7 @@ export type AdminShipment = Shipment & {
   payment_method_label: string | null;
   user?: User;
   booked_by?: string | null;
+  updated_by?: string | null;
   office?: Office | null;
 };
 
@@ -116,6 +117,9 @@ export type Staff = {
   phone: string | null;
   status: string;
   roles: string[];
+  permissions: string[];
+  role_permissions: string[];
+  direct_permissions: string[];
   created_at: string;
 };
 

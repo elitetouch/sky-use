@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Role, Staff } from "@/lib/types";
+import { StaffAccessEditor } from "@/components/admin/StaffAccessEditor";
 
 export function StaffList({ initialStaff, roles }: { initialStaff: Staff[]; roles: Role[] }) {
   const router = useRouter();
   const [staff, setStaff] = useState(initialStaff);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   async function changeRole(id: string, role: string) {
     setErrors((prev) => ({ ...prev, [id]: "" }));
@@ -106,12 +108,36 @@ export function StaffList({ initialStaff, roles }: { initialStaff: Staff[]; role
                 </button>
               </td>
               <td className="px-5 py-4">
-                <button onClick={() => revoke(member.id)} className="text-sm font-semibold text-red hover:text-red-light">
-                  Revoke
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setExpandedId((prev) => (prev === member.id ? null : member.id))}
+                    className="text-sm font-semibold text-navy hover:text-red"
+                  >
+                    {expandedId === member.id ? "Close" : "Access"}
+                  </button>
+                  <button onClick={() => revoke(member.id)} className="text-sm font-semibold text-red hover:text-red-light">
+                    Revoke
+                  </button>
+                </div>
               </td>
             </tr>
-          ))}
+          )).flatMap((row, index) => {
+            const member = staff[index];
+            if (expandedId !== member.id) return [row];
+            return [
+              row,
+              <tr key={`${member.id}-access`} className="bg-[#fafafa]">
+                <td colSpan={5} className="px-5 py-4">
+                  <StaffAccessEditor
+                    member={member}
+                    onUpdated={(updated) =>
+                      setStaff((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+                    }
+                  />
+                </td>
+              </tr>,
+            ];
+          })}
 
           {staff.length === 0 ? (
             <tr>

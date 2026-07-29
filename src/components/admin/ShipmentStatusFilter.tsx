@@ -1,7 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { StatusTemplate } from "@/lib/types";
+
+const SELECT_CLASS =
+  "w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
 
 export function ShipmentStatusFilter({
   templates,
@@ -11,15 +14,21 @@ export function ShipmentStatusFilter({
   selectedId: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   return (
     <select
       value={selectedId}
       onChange={(e) => {
-        const id = e.target.value;
-        router.push(id ? `/admin/shipments?status_template_id=${id}` : "/admin/shipments");
+        const params = new URLSearchParams(searchParams.toString());
+        if (e.target.value) {
+          params.set("status_template_id", e.target.value);
+        } else {
+          params.delete("status_template_id");
+        }
+        router.push(`/admin/shipments?${params.toString()}`);
       }}
-      className="w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy"
+      className={SELECT_CLASS}
     >
       <option value="">All milestones</option>
       {templates.map((template) => (
