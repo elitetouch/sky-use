@@ -189,15 +189,21 @@ export default async function ShipmentReceiptPage({ params }: Props) {
                   <thead>
                     <tr className="border-b text-left text-gray-500">
                       <th className="py-2 pr-4 font-semibold">Description</th>
-                      <th className="py-2 pr-4 text-right font-semibold">Weight (kg)</th>
+                      <th className="py-2 pr-4 text-right font-semibold">
+                        Weight (kg)
+                      </th>
                       <th className="py-2 text-right font-semibold">Cost</th>
                     </tr>
                   </thead>
                   <tbody>
                     {shipment.items.map((item) => (
                       <tr key={item.id} className="border-b border-gray-100">
-                        <td className="py-2 pr-4 text-gray-700">{item.description}</td>
-                        <td className="py-2 pr-4 text-right text-gray-700">{item.weight_kg}</td>
+                        <td className="py-2 pr-4 text-gray-700">
+                          {item.description}
+                        </td>
+                        <td className="py-2 pr-4 text-right text-gray-700">
+                          {item.weight_kg}
+                        </td>
                         <td className="py-2 text-right text-gray-700">
                           {formatNaira(item.cost_kobo)}
                         </td>
@@ -301,7 +307,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
             )}
 
             <p className="mt-8 text-center font-semibold text-navy">
-              Thank you for choosing Skyfots Global.
+              Thank you for choosing SkyFots Global Logistics.
             </p>
           </footer>
         </div>
