@@ -21,7 +21,11 @@ export default async function AdminShipmentsPage({
   const query = statusTemplateId ? `?filter[status_template_id]=${statusTemplateId}` : "";
   const [{ items: shipments }, templates] = await Promise.all([
     apiFetch<PaginatedResult<AdminShipment>>(`/admin/shipments${query}`, { token: token! }),
-    apiFetch<StatusTemplate[]>("/admin/status-templates?active_only=1", { token: token! }),
+    // Milestone list powers the filter dropdown only — don't let it crash the
+    // list page if the API is unavailable or behind.
+    apiFetch<StatusTemplate[]>("/admin/status-templates?active_only=1", { token: token! }).catch(
+      () => [] as StatusTemplate[],
+    ),
   ]);
 
   return (

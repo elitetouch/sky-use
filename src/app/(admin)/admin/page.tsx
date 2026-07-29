@@ -48,7 +48,7 @@ export default async function AdminDashboardPage() {
       <div className="mt-8">
         <p className="text-sm font-semibold text-navy">Shipments by Milestone</p>
         <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {Object.entries(metrics.shipments_by_status).map(([label, count]) => (
+          {Object.entries(metrics.shipments_by_status ?? {}).map(([label, count]) => (
             <div key={label} className="rounded-2xl border border-black/5 p-4 text-center">
               <p className="text-xl font-extrabold text-navy">{count}</p>
               <p className="mt-1 text-xs text-body">{label}</p>

@@ -27,7 +27,15 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
     throw error;
   }
 
-  const templates = await apiFetch<StatusTemplate[]>("/admin/status-templates?active_only=1", { token: token! });
+  // The milestone list is secondary UI (the status dropdown). If the API is
+  // unavailable or behind (missing this endpoint), still render the shipment
+  // rather than crashing the whole page.
+  let templates: StatusTemplate[] = [];
+  try {
+    templates = await apiFetch<StatusTemplate[]>("/admin/status-templates?active_only=1", { token: token! });
+  } catch {
+    templates = [];
+  }
 
   return (
     <div>
