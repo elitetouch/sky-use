@@ -6,6 +6,7 @@ import type { AdminShipment, PaginatedResult, StatusTemplate } from "@/lib/types
 import { formatNaira } from "@/lib/types";
 import { ShipmentStatusFilter } from "@/components/admin/ShipmentStatusFilter";
 import { ShipmentPaymentFilter } from "@/components/admin/ShipmentPaymentFilter";
+import { ShipmentDateFilter } from "@/components/admin/ShipmentDateFilter";
 import { ShipmentSearch } from "@/components/admin/ShipmentSearch";
 
 export const metadata: Metadata = {
@@ -15,15 +16,16 @@ export const metadata: Metadata = {
 export default async function AdminShipmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status_template_id?: string; search?: string; payment?: string }>;
+  searchParams: Promise<{ status_template_id?: string; search?: string; payment?: string; date?: string }>;
 }) {
-  const { status_template_id: statusTemplateId, search, payment } = await searchParams;
+  const { status_template_id: statusTemplateId, search, payment, date } = await searchParams;
   const token = await getSessionToken();
 
   const params = new URLSearchParams();
   if (statusTemplateId) params.set("filter[status_template_id]", statusTemplateId);
   if (search) params.set("filter[search]", search);
   if (payment) params.set("filter[payment]", payment);
+  if (date) params.set("filter[date]", date);
   const query = params.toString() ? `?${params.toString()}` : "";
   const [{ items: shipments }, templates] = await Promise.all([
     apiFetch<PaginatedResult<AdminShipment>>(`/admin/shipments${query}`, { token: token! }),
@@ -44,6 +46,9 @@ export default async function AdminShipmentsPage({
           <ShipmentSearch initialValue={search ?? ""} />
         </div>
         <div className="grid grid-cols-2 gap-3 lg:ml-auto lg:flex">
+          <div className="col-span-2 lg:w-72">
+            <ShipmentDateFilter selected={date ?? ""} />
+          </div>
           <div className="lg:w-44">
             <ShipmentPaymentFilter selected={payment ?? ""} />
           </div>
