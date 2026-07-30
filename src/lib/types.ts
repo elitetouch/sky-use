@@ -64,6 +64,12 @@ export type User = {
   created_at: string;
 };
 
+export type BusinessSetting = {
+  rc_number: string | null;
+  email: string | null;
+  phones: string[];
+};
+
 export type Office = {
   id: string;
   name: string;

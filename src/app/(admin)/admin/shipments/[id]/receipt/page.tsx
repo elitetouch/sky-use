@@ -2,8 +2,9 @@ import Image from "next/image";
 import { PrintButton } from "@/components/admin/PrintButton";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import type { AdminShipment } from "@/lib/types";
+import type { AdminShipment, BusinessSetting, Office } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
+import { formatPhone } from "@/lib/phone";
 
 type Props = {
   params: Promise<{
@@ -11,13 +12,17 @@ type Props = {
   }>;
 };
 
+const EMPTY_BUSINESS: BusinessSetting = { rc_number: null, email: null, phones: [] };
+
 export default async function ShipmentReceiptPage({ params }: Props) {
   const { id } = await params;
   const token = await getSessionToken();
 
-  const shipment = await apiFetch<AdminShipment>(`/admin/shipments/${id}`, {
-    token: token!,
-  });
+  const [shipment, offices, business] = await Promise.all([
+    apiFetch<AdminShipment>(`/admin/shipments/${id}`, { token: token! }),
+    apiFetch<Office[]>("/admin/offices", { token: token! }).catch(() => [] as Office[]),
+    apiFetch<BusinessSetting>("/admin/business-settings", { token: token! }).catch(() => EMPTY_BUSINESS),
+  ]);
 
   return (
     <main className="p-6 print:p-0 print:bg-white">
@@ -49,9 +54,30 @@ export default async function ShipmentReceiptPage({ params }: Props) {
               className="mx-auto object-contain"
             />
 
-            <p className="mt-2 text-sm text-gray-500">
-              Logistics & Courier Services
-            </p>
+            {/* Office addresses */}
+            {offices.length > 0 ? (
+              <div className="mx-auto mt-4 max-w-2xl space-y-1 text-sm text-gray-700">
+                {offices.map((office) => (
+                  <p key={office.id}>
+                    <span className="font-semibold text-navy">{office.name}:</span>{" "}
+                    <span className="whitespace-pre-line">{office.address}</span>
+                  </p>
+                ))}
+              </div>
+            ) : null}
+
+            {/* Business-wide contact details */}
+            {(business.phones.length > 0 || business.email || business.rc_number) && (
+              <div className="mt-3 text-sm text-gray-600">
+                {business.phones.length > 0 ? (
+                  <p>{business.phones.map((p) => formatPhone(p)).join("  •  ")}</p>
+                ) : null}
+                {business.email ? <p>{business.email}</p> : null}
+                {business.rc_number ? (
+                  <p className="mt-1 font-semibold text-navy">RC: {business.rc_number}</p>
+                ) : null}
+              </div>
+            )}
 
             <div className="mt-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
