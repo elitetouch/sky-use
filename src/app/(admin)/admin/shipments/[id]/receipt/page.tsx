@@ -39,16 +39,17 @@ export default async function ShipmentReceiptPage({ params }: Props) {
       </div>
 
       {/* Print watermark: Chrome does not repeat position:fixed on every printed
-          page. Instead we repeat a page-proportioned (A4) SVG tile that has the
-          faded logo centered in it; sized to 100% width, each tile is one page
-          tall, so exactly one centered watermark lands on every printed page. */}
+          page. Instead we repeat a page-proportioned (A4, 840x1188) transparent
+          PNG tile with the faded logo centered in it; sized to 100% width, each
+          tile is one page tall, so exactly one centered watermark lands on every
+          printed page. */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
             @media print {
               .receipt-watermark-screen { display: none !important; }
               .receipt-sheet {
-                background-image: url('/brand/watermark-tile.svg');
+                background-image: url('/brand/watermark-tile.png');
                 background-repeat: repeat-y;
                 background-position: center top;
                 background-size: 100% auto;
