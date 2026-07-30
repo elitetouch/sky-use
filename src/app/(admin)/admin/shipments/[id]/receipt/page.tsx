@@ -12,7 +12,11 @@ type Props = {
   }>;
 };
 
-const EMPTY_BUSINESS: BusinessSetting = { rc_number: null, email: null, phones: [] };
+const EMPTY_BUSINESS: BusinessSetting = {
+  rc_number: null,
+  email: null,
+  phones: [],
+};
 
 export default async function ShipmentReceiptPage({ params }: Props) {
   const { id } = await params;
@@ -20,8 +24,12 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
   const [shipment, offices, business] = await Promise.all([
     apiFetch<AdminShipment>(`/admin/shipments/${id}`, { token: token! }),
-    apiFetch<Office[]>("/admin/offices", { token: token! }).catch(() => [] as Office[]),
-    apiFetch<BusinessSetting>("/admin/business-settings", { token: token! }).catch(() => EMPTY_BUSINESS),
+    apiFetch<Office[]>("/admin/offices", { token: token! }).catch(
+      () => [] as Office[],
+    ),
+    apiFetch<BusinessSetting>("/admin/business-settings", {
+      token: token!,
+    }).catch(() => EMPTY_BUSINESS),
   ]);
 
   return (
@@ -59,22 +67,32 @@ export default async function ShipmentReceiptPage({ params }: Props) {
               <div className="mx-auto mt-4 max-w-2xl space-y-1 text-sm text-gray-700">
                 {offices.map((office) => (
                   <p key={office.id}>
-                    <span className="font-semibold text-navy">{office.name}:</span>{" "}
-                    <span className="whitespace-pre-line">{office.address}</span>
+                    <span className="font-semibold text-navy">
+                      {office.name}:
+                    </span>{" "}
+                    <span className="whitespace-pre-line">
+                      {office.address}
+                    </span>
                   </p>
                 ))}
               </div>
             ) : null}
 
             {/* Business-wide contact details */}
-            {(business.phones.length > 0 || business.email || business.rc_number) && (
+            {(business.phones.length > 0 ||
+              business.email ||
+              business.rc_number) && (
               <div className="mt-3 text-sm text-gray-600">
                 {business.phones.length > 0 ? (
-                  <p>{business.phones.map((p) => formatPhone(p)).join("  •  ")}</p>
+                  <p>
+                    {business.phones.map((p) => formatPhone(p)).join("  •  ")}
+                  </p>
                 ) : null}
                 {business.email ? <p>{business.email}</p> : null}
                 {business.rc_number ? (
-                  <p className="mt-1 font-semibold text-navy">RC: {business.rc_number}</p>
+                  <p className="mt-1 font-semibold text-navy">
+                    RC: {business.rc_number}
+                  </p>
                 ) : null}
               </div>
             )}
@@ -298,7 +316,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
             <div className="grid gap-6 sm:grid-cols-2">
               {/* Office Details */}
               <section>
-                <h2 className="font-bold text-navy">Office</h2>
+                <h2 className="font-bold text-navy">Booking Office</h2>
 
                 <div className="mt-3 space-y-1">
                   <p className="font-semibold">
