@@ -39,8 +39,9 @@ export default async function ShipmentReceiptPage({ params }: Props) {
       </div>
 
       <div className="relative mx-auto max-w-4xl rounded-xl border bg-white p-8 shadow-lg print:max-w-none print:rounded-none print:border-0 print:shadow-none">
-        {/* Watermark Logo */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.08]">
+        {/* Watermark Logo — absolute on screen, fixed on print so it re-centers
+            on every printed page (browsers paint a fixed element once per page). */}
+        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-[0.08] print:fixed">
           <Image
             src="/brand/skyfots-logo.png"
             alt=""
