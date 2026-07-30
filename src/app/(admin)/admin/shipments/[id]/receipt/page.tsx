@@ -35,13 +35,37 @@ export default async function ShipmentReceiptPage({ params }: Props) {
   return (
     <main className="p-6 print:p-0 print:bg-white">
       <div className="mb-6 flex justify-end print:hidden">
-        <PrintButton />
+        <PrintButton fileName={`SkyFots Global Logistics-${shipment.tracking_number}`} />
       </div>
 
-      <div className="relative mx-auto max-w-4xl rounded-xl border bg-white p-8 shadow-lg print:max-w-none print:rounded-none print:border-0 print:shadow-none">
-        {/* Watermark Logo — absolute on screen, fixed on print so it re-centers
-            on every printed page (browsers paint a fixed element once per page). */}
-        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-[0.08] print:fixed">
+      {/* Print watermark: Chrome does not repeat position:fixed on every printed
+          page, so for print we tile the logo as a repeating background on the
+          sheet (browsers paint element backgrounds on every page). The white
+          gradient layer on top fades it to a faint watermark. */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media print {
+              .receipt-watermark-screen { display: none !important; }
+              .receipt-sheet {
+                background-image:
+                  linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)),
+                  url('/brand/skyfots-logo.png');
+                background-repeat: repeat, repeat-y;
+                background-position: center, center 3rem;
+                background-size: auto, 55%;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+          `,
+        }}
+      />
+
+      <div className="receipt-sheet relative mx-auto max-w-4xl rounded-xl border bg-white p-8 shadow-lg print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+        {/* Watermark Logo — shown centered on screen only; print uses the tiled
+            background above so it appears on every printed page. */}
+        <div className="receipt-watermark-screen pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-[0.08]">
           <Image
             src="/brand/skyfots-logo.png"
             alt=""
