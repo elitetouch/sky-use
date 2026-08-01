@@ -2,15 +2,17 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { LinkButton } from "@/components/ui/Button";
 
+const SITE = "https://skyfotsglobal.com";
+
 const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/about.html", label: "About" },
-  { href: "/services.html", label: "Our Service" },
+  { href: "/", label: "Home", external: false },
+  { href: `${SITE}/about`, label: "About", external: true },
+  { href: `${SITE}/services`, label: "Our Service", external: true },
 ];
 
 const POLICY_LINKS = [
-  { href: "/policy.html", label: "Privacy Policy" },
-  { href: "/terms.html", label: "Terms of Use" },
+  { href: `${SITE}/policy`, label: "Privacy Policy" },
+  { href: `${SITE}/terms`, label: "Terms of Use" },
 ];
 
 const SOCIALS = [
@@ -79,15 +81,25 @@ export function SiteHeader() {
           <Logo />
 
           <nav className="hidden items-center gap-7 xl:flex">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm font-bold text-navy transition-colors hover:text-red"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.external ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm font-bold text-navy transition-colors hover:text-red"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm font-bold text-navy transition-colors hover:text-red"
+                >
+                  {link.label}
+                </Link>
+              ),
+            )}
 
             <div className="group relative">
               <button className="flex items-center gap-1 text-sm font-bold text-navy transition-colors group-hover:text-red">
@@ -111,7 +123,10 @@ export function SiteHeader() {
               </div>
             </div>
 
-            <a href="/contact.html" className="text-sm font-bold text-navy transition-colors hover:text-red">
+            <a
+              href={`${SITE}/contact`}
+              className="text-sm font-bold text-navy transition-colors hover:text-red"
+            >
               Contact Us
             </a>
             <Link href="/track" className="text-sm font-bold text-navy transition-colors hover:text-red">

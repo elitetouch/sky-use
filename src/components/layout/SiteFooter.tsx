@@ -1,29 +1,19 @@
 import Link from "next/link";
-import { Logo } from "@/components/brand/Logo";
+
+const SITE = "https://skyfotsglobal.com";
 
 const PRODUCT_LINKS = [
-  { label: "Get Quote", href: "/quote" },
-  { label: "Track Shipment", href: "/track" },
-  { label: "Book Shipment", href: "/login" },
+  { label: "Get Quote", href: "/quote", external: false },
+  { label: "Track Shipment", href: "/track", external: false },
+  { label: "Book Shipment", href: "/login", external: false },
 ];
 
 const COMPANY_LINKS = [
-  { label: "About Us", href: "/about.html" },
-  { label: "Services", href: "/services.html" },
-  { label: "Contact Us", href: "/contact.html" },
-  { label: "Terms of Use", href: "/terms.html" },
-  { label: "Privacy Policy", href: "/policy.html" },
-];
-
-const OFFICES = [
-  {
-    city: "Lagos Office",
-    address: "4 Shobogun Rofa Street, By Aviation Estate, Off Airport Rd, Mafoluku, Oshodi, Lagos",
-  },
-  {
-    city: "Ibadan Office",
-    address: "Suite C04 Agbeke KD Plaza, Opp. Yidi Praying Ground, Agodi-Gate, Ibadan",
-  },
+  { label: "About Us", href: `${SITE}/about` },
+  { label: "Services", href: `${SITE}/services` },
+  { label: "Contact Us", href: `${SITE}/contact` },
+  { label: "Terms of Use", href: `${SITE}/terms` },
+  { label: "Privacy Policy", href: `${SITE}/policy` },
 ];
 
 const SOCIALS = [
@@ -35,7 +25,7 @@ const SOCIALS = [
   {
     label: "Instagram",
     href: "https://www.instagram.com/skyfotsglobal/",
-    path: "M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16Zm0 3.68A6.16 6.16 0 1 0 12 18.16 6.16 6.16 0 0 0 12 5.84Zm0 10.16A4 4 0 1 1 12 8a4 4 0 0 1 0 8Zm6.4-10.4a1.44 1.44 0 1 1-2.88 0 1.44 1.44 0 0 1 2.88 0Z",
+    path: "M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16Zm0 3.68A6.16 6.16 0 1 0 12 18.16 6.16 6.16 0 0 0 12 5.84Zm0 10.16A4 4 0 1 1 12 8a4 4 0 0 1 0 8Zm6.4-10.4a1.44 1.44 0 1 1-2.88 0 1.44 1.44 0 0 1 2.88 0Z",
   },
   {
     label: "Facebook",
@@ -49,7 +39,14 @@ export function SiteFooter() {
     <footer className="mt-auto bg-[#00032A] text-white/70">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <Logo className="brightness-0 invert" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/img/logo/logo 4d.jpg"
+            alt="SkyFots Global Logistics"
+            className="h-14 w-auto"
+            width={867}
+            height={223}
+          />
           <p className="mt-5 max-w-xs text-sm leading-relaxed">Be Globally Connected...</p>
           <ul className="mt-5 flex gap-3">
             {SOCIALS.map((social) => (
@@ -98,20 +95,23 @@ export function SiteFooter() {
 
         <div className="lg:col-span-3">
           <h4 className="text-base font-semibold text-white">Information</h4>
-          <ul className="mt-4 space-y-4 text-sm">
-            {OFFICES.map((office) => (
-              <li key={office.city} className="flex gap-2">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="mt-0.5 h-4 w-4 shrink-0 text-red">
-                  <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
-                </svg>
-                <p className="leading-relaxed">
-                  <span className="font-semibold text-white">{office.city}</span>
-                  <br />
-                  {office.address}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-4 flex gap-2 text-sm leading-relaxed">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="mt-0.5 h-4 w-4 shrink-0 text-red">
+              <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
+            </svg>
+            <p>
+              <span className="font-semibold text-white">Lagos Office</span>
+              <br />4 Shobogun Rofa Street
+              <br />By Aviation Estate,
+              <br />Off Airport Rd, Mafoluku
+              <br />Oshodi, Lagos
+              <br />
+              <br />
+              <span className="font-semibold text-white">Ibadan Office</span>
+              <br />Suite C04 Agbeke KD Plaza Opp. Yidi Praying Ground,
+              <br />Agodi-Gate Ibadan
+            </p>
+          </div>
         </div>
       </div>
 
@@ -122,7 +122,7 @@ export function SiteFooter() {
             <Link href="/" className="font-semibold text-white hover:underline">
               Skyfots Global Logistics
             </Link>{" "}
-            &copy;{new Date().getFullYear()} | All Rights Reserved
+            &copy;{new Date().getFullYear()} | All Right Reserved
           </p>
         </div>
       </div>
