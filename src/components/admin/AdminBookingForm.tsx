@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { AddressFieldset, EMPTY_ADDRESS, type AddressForm } from "@/components/admin/AddressFieldset";
 import type { Office, User } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
+import { SERVICE_OPTIONS, DEFAULT_SERVICE } from "@/lib/services";
 
 type CustomerMode = "existing" | "new";
 
@@ -36,10 +37,10 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
   const [sender, setSender] = useState<AddressForm>(EMPTY_ADDRESS);
   const [receiver, setReceiver] = useState<AddressForm>(EMPTY_ADDRESS);
 
-  const [serviceLevel, setServiceLevel] = useState("standard");
-  const [mode, setMode] = useState("local");
+  const [serviceLevel, setServiceLevel] = useState<string>(DEFAULT_SERVICE);
   const [carrier, setCarrier] = useState("");
-  const [description, setDescription] = useState("");
+  const [totalWeight, setTotalWeight] = useState("");
+  const [note, setNote] = useState("");
   const [declaredValue, setDeclaredValue] = useState("");
 
   const [items, setItems] = useState<LineItem[]>([{ ...EMPTY_ITEM }]);
@@ -56,7 +57,6 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const totalWeight = items.reduce((sum, item) => sum + toNumber(item.weight), 0);
   const itemsTotal = items.reduce((sum, item) => sum + toNumber(item.cost), 0);
   const chargesTotal = toNumber(handling) + toNumber(freight) + toNumber(insurance);
   const totalAmount = itemsTotal + chargesTotal;
@@ -128,10 +128,10 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
         country: receiver.country || undefined,
       },
       service_level: serviceLevel,
-      mode,
+      weight_kg: Number(totalWeight),
       carrier: carrier || undefined,
       declared_value: declaredValue ? Number(declaredValue) : undefined,
-      description: description || undefined,
+      description: note || undefined,
       items: validItems.map((item) => ({
         description: item.description.trim(),
         weight_kg: toNumber(item.weight),
@@ -307,15 +307,11 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
           <div>
             <label className="block text-sm font-semibold text-navy">Service</label>
             <select value={serviceLevel} onChange={(e) => setServiceLevel(e.target.value)} className={inputClass}>
-              <option value="standard">Standard</option>
-              <option value="express">Express</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-navy">Mode</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value)} className={inputClass}>
-              <option value="local">Local</option>
-              <option value="international">International</option>
+              {SERVICE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -327,6 +323,30 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
               className={inputClass}
             />
           </div>
+          <div>
+            <label className="block text-sm font-semibold text-navy">Total Weight (kg)</label>
+            <input
+              type="number"
+              min="0.1"
+              step="0.01"
+              required
+              value={totalWeight}
+              onChange={(e) => setTotalWeight(e.target.value)}
+              placeholder="0"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-navy">Note (optional)</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={3}
+            placeholder="Describe the shipment contents…"
+            className={`${inputClass} resize-y`}
+          />
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -352,17 +372,6 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
               className={inputClass}
             />
           </div>
-        </div>
-
-        <div className="mt-4">
-          <label className="block text-sm font-semibold text-navy">Description (optional)</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            placeholder="Describe the shipment contents…"
-            className={`${inputClass} resize-y`}
-          />
         </div>
 
         {/* Line items */}
@@ -479,10 +488,6 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
         {/* Totals */}
         <div className="mt-5 rounded-xl bg-[#f5f5f7] p-4 text-sm">
           <div className="flex justify-between text-body">
-            <span>Total weight</span>
-            <span className="font-semibold text-navy">{totalWeight.toFixed(2)} kg</span>
-          </div>
-          <div className="mt-1 flex justify-between text-body">
             <span>Number of items</span>
             <span className="font-semibold text-navy">
               {items.filter((i) => i.description.trim() !== "").length}

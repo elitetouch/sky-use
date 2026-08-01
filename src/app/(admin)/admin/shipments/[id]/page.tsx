@@ -84,11 +84,7 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
             <div className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
               <div>
                 <p className="text-body">Service</p>
-                <p className="font-semibold capitalize text-navy">{shipment.service_level}</p>
-              </div>
-              <div>
-                <p className="text-body">Mode</p>
-                <p className="font-semibold capitalize text-navy">{shipment.mode}</p>
+                <p className="font-semibold text-navy">{shipment.service_label}</p>
               </div>
               <div>
                 <p className="text-body">Weight</p>

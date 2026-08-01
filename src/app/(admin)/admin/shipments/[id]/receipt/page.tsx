@@ -212,15 +212,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
               <div>
                 <p className="text-gray-500">Service</p>
 
-                <p className="font-semibold capitalize">
-                  {shipment.service_level}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-gray-500">Mode</p>
-
-                <p className="font-semibold capitalize">{shipment.mode}</p>
+                <p className="font-semibold">{shipment.service_label}</p>
               </div>
 
               <div>

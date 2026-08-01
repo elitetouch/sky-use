@@ -16,8 +16,7 @@ type StatusEvent = {
 type Shipment = {
   tracking_number: string;
   status_label: string;
-  service_level: string;
-  mode: string;
+  service_label: string;
   weight_kg: string;
   status_events: StatusEvent[];
 };
@@ -98,11 +97,7 @@ export function TrackLookup() {
           <div className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
             <div>
               <p className="text-body">Service</p>
-              <p className="font-semibold text-navy capitalize">{shipment.service_level}</p>
-            </div>
-            <div>
-              <p className="text-body">Mode</p>
-              <p className="font-semibold text-navy capitalize">{shipment.mode}</p>
+              <p className="font-semibold text-navy">{shipment.service_label}</p>
             </div>
             <div>
               <p className="text-body">Weight</p>

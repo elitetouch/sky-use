@@ -42,6 +42,7 @@ export type Shipment = {
   status_label: string;
   is_delivered: boolean;
   service_level: string;
+  service_label: string;
   mode: string;
   weight_kg: string;
   dimensions: Record<string, unknown> | null;

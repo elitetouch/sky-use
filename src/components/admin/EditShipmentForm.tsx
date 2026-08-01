@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { AddressFieldset, EMPTY_ADDRESS, type AddressForm } from "@/components/admin/AddressFieldset";
 import type { AdminShipment, Address } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
+import { SERVICE_OPTIONS } from "@/lib/services";
 
 type LineItem = { description: string; weight: string; cost: string };
 
@@ -41,9 +42,9 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
   const router = useRouter();
 
   const [serviceLevel, setServiceLevel] = useState(shipment.service_level);
-  const [mode, setMode] = useState(shipment.mode);
   const [carrier, setCarrier] = useState(shipment.carrier ?? "");
-  const [description, setDescription] = useState(shipment.description ?? "");
+  const [totalWeight, setTotalWeight] = useState(shipment.weight_kg ?? "");
+  const [note, setNote] = useState(shipment.description ?? "");
   const [declaredValue, setDeclaredValue] = useState(nairaField(shipment.declared_value_kobo));
 
   const [items, setItems] = useState<LineItem[]>(
@@ -66,7 +67,6 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const totalWeight = items.reduce((sum, item) => sum + toNumber(item.weight), 0);
   const totalAmount =
     items.reduce((sum, item) => sum + toNumber(item.cost), 0) +
     toNumber(handling) +
@@ -91,10 +91,10 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
 
     const payload = {
       service_level: serviceLevel,
-      mode,
+      weight_kg: Number(totalWeight),
       carrier: carrier || undefined,
       declared_value: declaredValue ? Number(declaredValue) : undefined,
-      description: description || undefined,
+      description: note || undefined,
       items: validItems.map((item) => ({
         description: item.description.trim(),
         weight_kg: toNumber(item.weight),
@@ -155,21 +155,40 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
           <div>
             <label className="block text-sm font-semibold text-navy">Service</label>
             <select value={serviceLevel} onChange={(e) => setServiceLevel(e.target.value)} className={inputClass}>
-              <option value="standard">Standard</option>
-              <option value="express">Express</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-navy">Mode</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value)} className={inputClass}>
-              <option value="local">Local</option>
-              <option value="international">International</option>
+              {SERVICE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>
             <label className="block text-sm font-semibold text-navy">Carrier</label>
             <input value={carrier} onChange={(e) => setCarrier(e.target.value)} className={inputClass} />
           </div>
+          <div>
+            <label className="block text-sm font-semibold text-navy">Total Weight (kg)</label>
+            <input
+              type="number"
+              min="0.1"
+              step="0.01"
+              required
+              value={totalWeight}
+              onChange={(e) => setTotalWeight(e.target.value)}
+              placeholder="0"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-navy">Note</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={3}
+            className={`${inputClass} resize-y`}
+          />
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -185,16 +204,6 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
               className={inputClass}
             />
           </div>
-        </div>
-
-        <div className="mt-4">
-          <label className="block text-sm font-semibold text-navy">Description</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className={`${inputClass} resize-y`}
-          />
         </div>
 
         <div className="mt-6 border-t border-black/5 pt-5">
@@ -277,11 +286,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
         </div>
 
         <div className="mt-5 rounded-xl bg-[#f5f5f7] p-4 text-sm">
-          <div className="flex justify-between text-body">
-            <span>Total weight</span>
-            <span className="font-semibold text-navy">{totalWeight.toFixed(2)} kg</span>
-          </div>
-          <div className="mt-2 flex justify-between border-t border-black/10 pt-2 text-base">
+          <div className="flex justify-between text-base">
             <span className="font-semibold text-navy">Total amount</span>
             <span className="font-extrabold text-navy">{formatNaira(Math.round(totalAmount * 100))}</span>
           </div>

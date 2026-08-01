@@ -56,7 +56,7 @@ export default async function ShipmentsPage() {
                       {shipment.status_label}
                     </span>
                   </td>
-                  <td className="px-5 py-4 capitalize text-body">{shipment.service_level}</td>
+                  <td className="px-5 py-4 text-body">{shipment.service_label}</td>
                   <td className="px-5 py-4 text-body">
                     {shipment.price_kobo !== null ? formatNaira(shipment.price_kobo) : "—"}
                   </td>
