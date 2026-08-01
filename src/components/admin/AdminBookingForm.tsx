@@ -439,19 +439,7 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
         {/* Charges */}
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div>
-            <label className="block text-sm font-semibold text-navy">Handling (₦)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={handling}
-              onChange={(e) => setHandling(e.target.value)}
-              placeholder="0"
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-navy">Freight charge (₦)</label>
+            <label className="block text-sm font-semibold text-navy">Freight Charge (₦)</label>
             <input
               type="number"
               min="0"
@@ -463,7 +451,19 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-navy">Insurance charge (₦)</label>
+            <label className="block text-sm font-semibold text-navy">Handling Charge (₦)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={handling}
+              onChange={(e) => setHandling(e.target.value)}
+              placeholder="0"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-navy">Insurance Charge (₦)</label>
             <input
               type="number"
               min="0"
