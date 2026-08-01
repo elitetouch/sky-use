@@ -9,7 +9,7 @@ import type { AdminShipment, Address } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { SERVICE_OPTIONS } from "@/lib/services";
 
-type LineItem = { description: string; weight: string; cost: string };
+type LineItem = { description: string; amount: string };
 
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
@@ -51,10 +51,9 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
     shipment.items && shipment.items.length > 0
       ? shipment.items.map((item) => ({
           description: item.description,
-          weight: item.weight_kg,
-          cost: String(item.cost_kobo / 100),
+          amount: item.cost_kobo ? String(item.cost_kobo / 100) : "",
         }))
-      : [{ description: "", weight: "", cost: "" }],
+      : [{ description: "", amount: "" }],
   );
 
   const [handling, setHandling] = useState(nairaField(shipment.handling_kobo));
@@ -67,11 +66,8 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const totalAmount =
-    items.reduce((sum, item) => sum + toNumber(item.cost), 0) +
-    toNumber(handling) +
-    toNumber(freight) +
-    toNumber(insurance);
+  // Item amounts are recorded per line but are NOT part of the total.
+  const totalAmount = toNumber(handling) + toNumber(freight) + toNumber(insurance);
 
   function updateItem(index: number, patch: Partial<LineItem>) {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -97,8 +93,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
       description: note || undefined,
       items: validItems.map((item) => ({
         description: item.description.trim(),
-        weight_kg: toNumber(item.weight),
-        cost: toNumber(item.cost),
+        cost: toNumber(item.amount),
       })),
       handling: handling ? Number(handling) : undefined,
       freight: freight ? Number(freight) : undefined,
@@ -211,7 +206,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
             <p className="text-sm font-semibold text-navy">Items</p>
             <button
               type="button"
-              onClick={() => setItems((prev) => [...prev, { description: "", weight: "", cost: "" }])}
+              onClick={() => setItems((prev) => [...prev, { description: "", amount: "" }])}
               className="rounded-full border border-navy/20 px-3 py-1 text-xs font-semibold text-navy hover:bg-navy/5"
             >
               + Add item
@@ -221,7 +216,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
           <div className="mt-3 space-y-3">
             {items.map((item, index) => (
               <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-12 sm:items-end">
-                <div className="sm:col-span-6">
+                <div className="sm:col-span-8">
                   {index === 0 ? <label className="block text-xs font-semibold text-body">Description</label> : null}
                   <input
                     value={item.description}
@@ -230,26 +225,16 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
                     className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy"
                   />
                 </div>
-                <div className="sm:col-span-2">
-                  {index === 0 ? <label className="block text-xs font-semibold text-body">Weight (kg)</label> : null}
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.weight}
-                    onChange={(e) => updateItem(index, { weight: e.target.value })}
-                    placeholder="0"
-                    className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy"
-                  />
-                </div>
                 <div className="sm:col-span-3">
-                  {index === 0 ? <label className="block text-xs font-semibold text-body">Cost (₦)</label> : null}
+                  {index === 0 ? (
+                    <label className="block text-xs font-semibold text-body">Amount (₦, optional)</label>
+                  ) : null}
                   <input
                     type="number"
                     min="0"
                     step="0.01"
-                    value={item.cost}
-                    onChange={(e) => updateItem(index, { cost: e.target.value })}
+                    value={item.amount}
+                    onChange={(e) => updateItem(index, { amount: e.target.value })}
                     placeholder="0"
                     className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy"
                   />

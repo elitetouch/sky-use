@@ -10,9 +10,9 @@ import { SERVICE_OPTIONS, DEFAULT_SERVICE } from "@/lib/services";
 
 type CustomerMode = "existing" | "new";
 
-type LineItem = { description: string; weight: string; cost: string };
+type LineItem = { description: string; amount: string };
 
-const EMPTY_ITEM: LineItem = { description: "", weight: "", cost: "" };
+const EMPTY_ITEM: LineItem = { description: "", amount: "" };
 
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
@@ -57,9 +57,8 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const itemsTotal = items.reduce((sum, item) => sum + toNumber(item.cost), 0);
-  const chargesTotal = toNumber(handling) + toNumber(freight) + toNumber(insurance);
-  const totalAmount = itemsTotal + chargesTotal;
+  // Item amounts are recorded per line but are NOT part of the total.
+  const totalAmount = toNumber(handling) + toNumber(freight) + toNumber(insurance);
 
   function updateItem(index: number, patch: Partial<LineItem>) {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -134,8 +133,7 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
       description: note || undefined,
       items: validItems.map((item) => ({
         description: item.description.trim(),
-        weight_kg: toNumber(item.weight),
-        cost: toNumber(item.cost),
+        cost: toNumber(item.amount),
       })),
       handling: handling ? Number(handling) : undefined,
       freight: freight ? Number(freight) : undefined,
@@ -390,7 +388,7 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
           <div className="mt-3 space-y-3">
             {items.map((item, index) => (
               <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-12 sm:items-end">
-                <div className="sm:col-span-6">
+                <div className="sm:col-span-8">
                   {index === 0 ? (
                     <label className="block text-xs font-semibold text-body">Description</label>
                   ) : null}
@@ -401,30 +399,16 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
                     className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy"
                   />
                 </div>
-                <div className="sm:col-span-2">
-                  {index === 0 ? (
-                    <label className="block text-xs font-semibold text-body">Weight (kg)</label>
-                  ) : null}
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.weight}
-                    onChange={(e) => updateItem(index, { weight: e.target.value })}
-                    placeholder="0"
-                    className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy"
-                  />
-                </div>
                 <div className="sm:col-span-3">
                   {index === 0 ? (
-                    <label className="block text-xs font-semibold text-body">Cost (₦)</label>
+                    <label className="block text-xs font-semibold text-body">Amount (₦, optional)</label>
                   ) : null}
                   <input
                     type="number"
                     min="0"
                     step="0.01"
-                    value={item.cost}
-                    onChange={(e) => updateItem(index, { cost: e.target.value })}
+                    value={item.amount}
+                    onChange={(e) => updateItem(index, { amount: e.target.value })}
                     placeholder="0"
                     className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy"
                   />
@@ -487,13 +471,7 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
 
         {/* Totals */}
         <div className="mt-5 rounded-xl bg-[#f5f5f7] p-4 text-sm">
-          <div className="flex justify-between text-body">
-            <span>Number of items</span>
-            <span className="font-semibold text-navy">
-              {items.filter((i) => i.description.trim() !== "").length}
-            </span>
-          </div>
-          <div className="mt-2 flex justify-between border-t border-black/10 pt-2 text-base">
+          <div className="flex justify-between text-base">
             <span className="font-semibold text-navy">Total amount</span>
             <span className="font-extrabold text-navy">{formatNaira(Math.round(totalAmount * 100))}</span>
           </div>

@@ -257,10 +257,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
                   <thead>
                     <tr className="border-b text-left text-gray-500">
                       <th className="py-2 pr-4 font-semibold">Description</th>
-                      <th className="py-2 pr-4 text-right font-semibold">
-                        Weight (kg)
-                      </th>
-                      <th className="py-2 text-right font-semibold">Cost</th>
+                      <th className="py-2 text-right font-semibold">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -269,11 +266,8 @@ export default async function ShipmentReceiptPage({ params }: Props) {
                         <td className="py-2 pr-4 text-gray-700">
                           {item.description}
                         </td>
-                        <td className="py-2 pr-4 text-right text-gray-700">
-                          {item.weight_kg}
-                        </td>
                         <td className="py-2 text-right text-gray-700">
-                          {formatNaira(item.cost_kobo)}
+                          {item.cost_kobo > 0 ? formatNaira(item.cost_kobo) : ""}
                         </td>
                       </tr>
                     ))}
