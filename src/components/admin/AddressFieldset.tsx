@@ -8,6 +8,7 @@ export type AddressForm = {
   label: string;
   contact_name: string;
   phone: string;
+  email: string;
   line1: string;
   line2: string;
   city: string;
@@ -19,6 +20,7 @@ export const EMPTY_ADDRESS: AddressForm = {
   label: "",
   contact_name: "",
   phone: "",
+  email: "",
   line1: "",
   line2: "",
   city: "",
@@ -154,6 +156,10 @@ export function AddressFieldset({
           <label className="block text-sm font-semibold text-navy">Phone</label>
           <input required value={value.phone} onChange={update("phone")} className={inputClass} />
         </div>
+      </div>
+      <div className="mt-4">
+        <label className="block text-sm font-semibold text-navy">Email (optional)</label>
+        <input type="email" value={value.email} onChange={update("email")} className={inputClass} />
       </div>
       <div className="mt-4">
         <label className="block text-sm font-semibold text-navy">Address line 1</label>

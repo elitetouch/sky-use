@@ -28,6 +28,7 @@ function addressToForm(address: Address | undefined): AddressForm {
     label: address.label ?? "",
     contact_name: address.contact_name,
     phone: address.phone,
+    email: address.email ?? "",
     line1: address.line1,
     line2: address.line2 ?? "",
     city: address.city,
@@ -105,6 +106,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
       sender_address: {
         contact_name: sender.contact_name,
         phone: sender.phone,
+        email: sender.email || undefined,
         line1: sender.line1,
         line2: sender.line2 || undefined,
         city: sender.city,
@@ -114,6 +116,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
       receiver_address: {
         contact_name: receiver.contact_name,
         phone: receiver.phone,
+        email: receiver.email || undefined,
         line1: receiver.line1,
         line2: receiver.line2 || undefined,
         city: receiver.city,

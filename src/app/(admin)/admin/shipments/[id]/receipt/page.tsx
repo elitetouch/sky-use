@@ -161,6 +161,10 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
                 <p>{shipment.sender_address?.phone}</p>
 
+                {shipment.sender_address?.email ? (
+                  <p>{shipment.sender_address.email}</p>
+                ) : null}
+
                 <p className="mt-2">{shipment.sender_address?.line1}</p>
 
                 <p>
@@ -181,6 +185,10 @@ export default async function ShipmentReceiptPage({ params }: Props) {
                 </p>
 
                 <p>{shipment.receiver_address?.phone}</p>
+
+                {shipment.receiver_address?.email ? (
+                  <p>{shipment.receiver_address.email}</p>
+                ) : null}
 
                 <p className="mt-2">{shipment.receiver_address?.line1}</p>
 

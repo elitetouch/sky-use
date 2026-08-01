@@ -3,6 +3,7 @@ export type Address = {
   label: string | null;
   contact_name: string;
   phone: string;
+  email: string | null;
   line1: string;
   line2: string | null;
   city: string;
