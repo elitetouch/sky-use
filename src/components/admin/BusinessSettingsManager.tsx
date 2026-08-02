@@ -11,6 +11,7 @@ const inputClass =
 export function BusinessSettingsManager({ initial }: { initial: BusinessSetting }) {
   const [rcNumber, setRcNumber] = useState(initial.rc_number ?? "");
   const [email, setEmail] = useState(initial.email ?? "");
+  const [website, setWebsite] = useState(initial.website ?? "");
   const [phones, setPhones] = useState<string[]>(initial.phones.length > 0 ? initial.phones : [""]);
 
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +43,7 @@ export function BusinessSettingsManager({ initial }: { initial: BusinessSetting 
         body: JSON.stringify({
           rc_number: rcNumber || null,
           email: email || null,
+          website: website || null,
           phones: phones.map((p) => p.trim()).filter((p) => p !== ""),
         }),
       });
@@ -73,6 +75,15 @@ export function BusinessSettingsManager({ initial }: { initial: BusinessSetting 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="info@skyfotsglobal.com"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-navy">Website</label>
+          <input
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            placeholder="www.skyfotsglobal.com"
             className={inputClass}
           />
         </div>

@@ -69,6 +69,7 @@ export type User = {
 export type BusinessSetting = {
   rc_number: string | null;
   email: string | null;
+  website: string | null;
   phones: string[];
 };
 

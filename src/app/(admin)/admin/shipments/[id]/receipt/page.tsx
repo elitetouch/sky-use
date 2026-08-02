@@ -15,6 +15,7 @@ type Props = {
 const EMPTY_BUSINESS: BusinessSetting = {
   rc_number: null,
   email: null,
+  website: null,
   phones: [],
 };
 
@@ -76,61 +77,72 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
         {/* Receipt Content */}
         <div className="relative z-10">
-          {/* Header */}
-          <div className="border-b pb-6 text-center">
-            <Image
-              src="/brand/skyfots-logo.png"
-              alt="Skyfots Global"
-              width={220}
-              height={90}
-              className="mx-auto object-contain"
-            />
+          {/* Header — company letterhead */}
+          <div className="border-b pb-6">
+            {/* Logo + RC */}
+            <div className="flex items-start justify-between gap-4">
+              <Image
+                src="/brand/skyfots-logo.png"
+                alt="Skyfots Global"
+                width={220}
+                height={90}
+                className="object-contain"
+              />
+              {business.rc_number ? (
+                <p className="text-sm font-semibold text-navy">
+                  RC: {business.rc_number}
+                </p>
+              ) : null}
+            </div>
 
-            {/* Office addresses */}
-            {offices.length > 0 ? (
-              <div className="mx-auto mt-4 max-w-2xl space-y-1 text-sm text-gray-700">
+            {/* Addresses / contacts (left) + date (right) */}
+            <div className="mt-4 flex items-start justify-between gap-6">
+              <div className="space-y-1 text-sm text-gray-700">
                 {offices.map((office) => (
                   <p key={office.id}>
-                    <span className="font-semibold text-navy">
-                      {office.name}:
-                    </span>{" "}
-                    <span className="whitespace-pre-line">
-                      {office.address}
-                    </span>
+                    <span className="font-semibold text-navy">{office.name}:</span>{" "}
+                    <span className="whitespace-pre-line">{office.address}</span>
                   </p>
                 ))}
-              </div>
-            ) : null}
-
-            {/* Business-wide contact details */}
-            {(business.phones.length > 0 ||
-              business.email ||
-              business.rc_number) && (
-              <div className="mt-3 text-sm text-gray-600">
                 {business.phones.length > 0 ? (
                   <p>
-                    {business.phones.map((p) => formatPhone(p)).join("  •  ")}
+                    <span className="font-semibold text-navy">Tel:</span>{" "}
+                    {business.phones.map((p) => formatPhone(p)).join(", ")}
                   </p>
                 ) : null}
-                {business.email ? <p>{business.email}</p> : null}
-                {business.rc_number ? (
-                  <p className="mt-1 font-semibold text-navy">
-                    RC: {business.rc_number}
+                {(business.email || business.website) && (
+                  <p className="flex flex-wrap gap-x-6 gap-y-1">
+                    {business.email ? (
+                      <span>
+                        <span className="font-semibold text-navy">Email:</span>{" "}
+                        {business.email}
+                      </span>
+                    ) : null}
+                    {business.website ? (
+                      <span>
+                        <span className="font-semibold text-navy">Website:</span>{" "}
+                        {business.website}
+                      </span>
+                    ) : null}
                   </p>
-                ) : null}
+                )}
               </div>
-            )}
 
-            <div className="mt-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Tracking Number
+              <p className="whitespace-nowrap text-sm text-gray-700">
+                <span className="font-semibold text-navy">Date:</span>{" "}
+                {new Date(shipment.created_at).toLocaleDateString()}
               </p>
+            </div>
 
-              <p className="text-xl font-bold text-navy">
-                {shipment.tracking_number}
-              </p>
-
-              <span className="mt-3 inline-block rounded-full bg-navy px-4 py-1.5 text-sm font-semibold text-white">
+            {/* Tracking number + status */}
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Tracking Number
+                </p>
+                <p className="text-xl font-bold text-navy">{shipment.tracking_number}</p>
+              </div>
+              <span className="inline-block rounded-full bg-navy px-4 py-1.5 text-sm font-semibold text-white">
                 {shipment.status_label}
               </span>
             </div>

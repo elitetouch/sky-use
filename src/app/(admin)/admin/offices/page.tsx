@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Offices",
 };
 
-const EMPTY_BUSINESS: BusinessSetting = { rc_number: null, email: null, phones: [] };
+const EMPTY_BUSINESS: BusinessSetting = { rc_number: null, email: null, website: null, phones: [] };
 
 export default async function AdminOfficesPage() {
   const token = await getSessionToken();
