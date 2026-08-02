@@ -40,8 +40,16 @@ export function LoginForm() {
     }
   }
 
+  const justReset = searchParams.get("reset") === "1";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {justReset ? (
+        <div className="rounded-lg bg-navy/5 px-4 py-3 text-sm text-navy">
+          Your password has been reset. Please log in with your new password.
+        </div>
+      ) : null}
+
       {error ? (
         <div className="rounded-lg bg-red/10 px-4 py-3 text-sm text-red">{error}</div>
       ) : null}
@@ -64,6 +72,12 @@ export function LoginForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
+
+      <div className="text-right">
+        <Link href="/forgot-password" className="text-sm font-semibold text-navy hover:text-red">
+          Forgot password?
+        </Link>
+      </div>
 
       <Button type="submit" variant="accent" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Logging in…" : "Log In"}
