@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { PermissionGroup, Role, Staff } from "@/lib/types";
 import { StaffAccessEditor } from "@/components/admin/StaffAccessEditor";
 
@@ -18,6 +18,18 @@ export function StaffList({
   const [staff, setStaff] = useState(initialStaff);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  // Keep the list in sync with fresh server data after router.refresh().
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStaff(initialStaff);
+  }, [initialStaff]);
+
+  function flash(message: string) {
+    setNotice(message);
+    setTimeout(() => setNotice((current) => (current === message ? null : current)), 4000);
+  }
 
   async function changeRole(id: string, role: string) {
     setErrors((prev) => ({ ...prev, [id]: "" }));
@@ -56,17 +68,16 @@ export function StaffList({
   }
 
   async function revoke(id: string) {
-    if (!confirm("Revoke this staff member's access? This removes all their roles.")) return;
+    if (!confirm("Revoke this staff member? This deletes their account and lets the email be invited again.")) return;
 
     setErrors((prev) => ({ ...prev, [id]: "" }));
 
     const response = await fetch(`/api/admin/staff/${id}`, { method: "DELETE" });
 
     if (response.status === 204) {
+      setStaff((prev) => prev.filter((s) => s.id !== id));
+      flash("Staff access revoked.");
       router.refresh();
-      setStaff((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, roles: [], status: "suspended" } : s)),
-      );
       return;
     }
 
@@ -75,7 +86,13 @@ export function StaffList({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-black/5">
+    <div>
+      {notice ? (
+        <div className="mb-3 rounded-lg bg-navy/5 px-4 py-3 text-sm font-semibold text-navy">
+          {notice}
+        </div>
+      ) : null}
+      <div className="overflow-hidden rounded-2xl border border-black/5">
       <table className="w-full text-left text-sm">
         <thead className="bg-[#f5f5f5] text-xs uppercase tracking-wide text-body">
           <tr>
@@ -95,7 +112,7 @@ export function StaffList({
                 <select
                   value={member.roles[0] ?? ""}
                   onChange={(e) => changeRole(member.id, e.target.value)}
-                  className="rounded-lg border border-black/10 px-2 py-1 text-sm text-navy outline-none focus:border-navy"
+                  className="cursor-pointer rounded-lg border border-black/10 px-2 py-1 text-sm capitalize text-navy outline-none focus:border-navy"
                 >
                   {roles.map((role) => (
                     <option key={role.name} value={role.name}>
@@ -108,7 +125,7 @@ export function StaffList({
               <td className="px-5 py-4">
                 <button
                   onClick={() => toggleStatus(member)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${
+                  className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold capitalize ${
                     member.status === "active" ? "bg-navy/10 text-navy" : "bg-red/10 text-red"
                   }`}
                 >
@@ -119,11 +136,14 @@ export function StaffList({
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setExpandedId((prev) => (prev === member.id ? null : member.id))}
-                    className="text-sm font-semibold text-navy hover:text-red"
+                    className="cursor-pointer text-sm font-semibold text-navy hover:text-red"
                   >
                     {expandedId === member.id ? "Close" : "Access"}
                   </button>
-                  <button onClick={() => revoke(member.id)} className="text-sm font-semibold text-red hover:text-red-light">
+                  <button
+                    onClick={() => revoke(member.id)}
+                    className="cursor-pointer text-sm font-semibold text-red hover:text-red-light"
+                  >
                     Revoke
                   </button>
                 </div>
@@ -157,6 +177,7 @@ export function StaffList({
           ) : null}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

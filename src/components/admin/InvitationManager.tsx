@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import type { Role, StaffInvitation } from "@/lib/types";
@@ -22,6 +22,14 @@ export function InvitationManager({
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resentId, setResentId] = useState<string | null>(null);
+
+  // Sync with fresh server data after router.refresh() (e.g. a revoke elsewhere).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setInvitations(initialInvitations);
+  }, [initialInvitations]);
 
   async function handleInvite(event: FormEvent) {
     event.preventDefault();
@@ -55,12 +63,19 @@ export function InvitationManager({
   }
 
   async function handleResend(id: string) {
-    const response = await fetch(`/api/admin/staff-invitations/${id}/resend`, { method: "POST" });
-    const json = await response.json();
+    setResendingId(id);
+    try {
+      const response = await fetch(`/api/admin/staff-invitations/${id}/resend`, { method: "POST" });
+      const json = await response.json();
 
-    if (response.ok) {
-      setInvitations((prev) => prev.map((i) => (i.id === id ? json.data : i)));
-      router.refresh();
+      if (response.ok) {
+        setInvitations((prev) => prev.map((i) => (i.id === id ? json.data : i)));
+        setResentId(id);
+        setTimeout(() => setResentId((current) => (current === id ? null : current)), 4000);
+        router.refresh();
+      }
+    } finally {
+      setResendingId(null);
     }
   }
 
@@ -164,10 +179,21 @@ export function InvitationManager({
                 <td className="px-5 py-4">
                   {!invitation.accepted_at ? (
                     <div className="flex gap-3 text-sm font-semibold">
-                      <button onClick={() => handleResend(invitation.id)} className="text-navy hover:text-red">
-                        Resend
+                      <button
+                        onClick={() => handleResend(invitation.id)}
+                        disabled={resendingId === invitation.id}
+                        className="cursor-pointer text-navy hover:text-red disabled:cursor-default disabled:opacity-60"
+                      >
+                        {resendingId === invitation.id
+                          ? "Sending…"
+                          : resentId === invitation.id
+                            ? "Sent ✓"
+                            : "Resend"}
                       </button>
-                      <button onClick={() => handleRevoke(invitation.id)} className="text-red hover:text-red-light">
+                      <button
+                        onClick={() => handleRevoke(invitation.id)}
+                        className="cursor-pointer text-red hover:text-red-light"
+                      >
                         Revoke
                       </button>
                     </div>
