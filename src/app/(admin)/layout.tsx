@@ -1,17 +1,17 @@
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 import { DashboardShell, type NavItem } from "@/components/layout/DashboardShell";
-import { getCurrentUser, isStaff } from "@/lib/session";
+import { getCurrentUser, isStaff, can } from "@/lib/session";
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/shipments", label: "Shipments" },
-  { href: "/admin/shipments/new", label: "Book Shipment" },
-  { href: "/admin/pricing", label: "Pricing Rules" },
-  { href: "/admin/status-templates", label: "Status Milestones" },
-  { href: "/admin/offices", label: "Offices" },
-  { href: "/admin/staff", label: "Staff" },
-  { href: "/admin/customers", label: "Customers" },
+const NAV_ITEMS: (NavItem & { permission?: string })[] = [
+  { href: "/admin", label: "Overview", permission: "dashboard.view" },
+  { href: "/admin/shipments", label: "Shipments", permission: "shipments.view" },
+  { href: "/admin/shipments/new", label: "Book Shipment", permission: "shipments.create" },
+  { href: "/admin/pricing", label: "Pricing Rules", permission: "pricing.view" },
+  { href: "/admin/status-templates", label: "Status Milestones", permission: "milestones.manage" },
+  { href: "/admin/offices", label: "Offices", permission: "offices.manage" },
+  { href: "/admin/staff", label: "Staff", permission: "staff.view" },
+  { href: "/admin/customers", label: "Customers", permission: "customers.view" },
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
@@ -25,8 +25,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     redirect("/dashboard");
   }
 
+  const navItems: NavItem[] = NAV_ITEMS.filter(
+    (item) => !item.permission || can(user, item.permission),
+  ).map(({ href, label }) => ({ href, label }));
+
   return (
-    <DashboardShell user={user} navItems={NAV_ITEMS}>
+    <DashboardShell user={user} navItems={navItems}>
       {children}
     </DashboardShell>
   );

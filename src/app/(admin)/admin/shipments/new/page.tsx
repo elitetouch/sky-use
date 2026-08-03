@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import { apiFetch } from "@/lib/api";
-import { getSessionToken } from "@/lib/session";
+import { getSessionToken, getCurrentUser, can } from "@/lib/session";
 import type { Office } from "@/lib/types";
 import { AdminBookingForm } from "@/components/admin/AdminBookingForm";
+import { NoAccess } from "@/components/admin/NoAccess";
 
 export const metadata: Metadata = {
   title: "Book Shipment",
 };
 
 export default async function AdminBookShipmentPage() {
+  if (!can(await getCurrentUser(), "shipments.create")) {
+    return <NoAccess area="Book Shipment" />;
+  }
   const token = await getSessionToken();
   const offices = await apiFetch<Office[]>("/admin/offices", { token: token! });
 

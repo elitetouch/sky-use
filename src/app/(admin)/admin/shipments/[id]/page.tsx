@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
-import { getSessionToken } from "@/lib/session";
+import { getSessionToken, getCurrentUser, can } from "@/lib/session";
 import type { AdminShipment, StatusTemplate } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import Link from "next/link";
+import { NoAccess } from "@/components/admin/NoAccess";
 import { UpdateStatusForm } from "@/components/admin/UpdateStatusForm";
 import { AssignCourierForm } from "@/components/admin/AssignCourierForm";
 import { PaymentStatusForm } from "@/components/admin/PaymentStatusForm";
@@ -17,6 +18,11 @@ export const metadata: Metadata = {
 export default async function AdminShipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const token = await getSessionToken();
+  const user = await getCurrentUser();
+
+  if (!can(user, "shipments.view")) {
+    return <NoAccess area="shipments" />;
+  }
 
   let shipment: AdminShipment;
 
@@ -55,12 +61,14 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
           <span className="rounded-full bg-navy px-4 py-1.5 text-sm font-semibold text-white">
             {shipment.status_label}
           </span>
-          <Link
-            href={`/admin/shipments/${shipment.id}/edit`}
-            className="rounded-lg border border-navy/20 px-4 py-1.5 text-sm font-semibold text-navy hover:bg-navy hover:text-white"
-          >
-            Edit
-          </Link>
+          {can(user, "shipments.edit") ? (
+            <Link
+              href={`/admin/shipments/${shipment.id}/edit`}
+              className="rounded-lg border border-navy/20 px-4 py-1.5 text-sm font-semibold text-navy hover:bg-navy hover:text-white"
+            >
+              Edit
+            </Link>
+          ) : null}
           <Link
             href={`/admin/shipments/${shipment.id}/receipt`}
             className="rounded-lg border border-navy/20 px-4 py-1.5 text-sm font-semibold text-navy hover:bg-navy hover:text-white"
@@ -151,25 +159,33 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
             </p>
           </div>
 
-          <PaymentStatusForm
-            shipmentId={shipment.id}
-            paidAt={shipment.paid_at}
-            paymentMethod={shipment.payment_method}
-            paymentMethodLabel={shipment.payment_method_label}
-          />
+          {can(user, "shipments.payment") ? (
+            <PaymentStatusForm
+              shipmentId={shipment.id}
+              paidAt={shipment.paid_at}
+              paymentMethod={shipment.payment_method}
+              paymentMethodLabel={shipment.payment_method_label}
+            />
+          ) : null}
 
-          <UpdateStatusForm
-            shipmentId={shipment.id}
-            currentTemplateId={shipment.status_template_id}
-            templates={templates}
-          />
-          <AssignCourierForm
-            shipmentId={shipment.id}
-            currentCourier={shipment.courier}
-            currentTrackingNumber={shipment.courier_tracking_number}
-          />
+          {can(user, "shipments.tracking") ? (
+            <UpdateStatusForm
+              shipmentId={shipment.id}
+              currentTemplateId={shipment.status_template_id}
+              templates={templates}
+            />
+          ) : null}
+          {can(user, "shipments.courier") ? (
+            <AssignCourierForm
+              shipmentId={shipment.id}
+              currentCourier={shipment.courier}
+              currentTrackingNumber={shipment.courier_tracking_number}
+            />
+          ) : null}
 
-          <DeleteShipmentButton shipmentId={shipment.id} trackingNumber={shipment.tracking_number} />
+          {can(user, "shipments.delete") ? (
+            <DeleteShipmentButton shipmentId={shipment.id} trackingNumber={shipment.tracking_number} />
+          ) : null}
         </div>
       </div>
     </div>

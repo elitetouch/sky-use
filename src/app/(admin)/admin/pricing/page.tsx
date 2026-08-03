@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import { apiFetch } from "@/lib/api";
-import { getSessionToken } from "@/lib/session";
+import { getSessionToken, getCurrentUser, can } from "@/lib/session";
 import type { PricingRule } from "@/lib/types";
 import { PricingRuleManager } from "@/components/admin/PricingRuleManager";
+import { NoAccess } from "@/components/admin/NoAccess";
 
 export const metadata: Metadata = {
   title: "Pricing Rules",
 };
 
 export default async function AdminPricingPage() {
+  if (!can(await getCurrentUser(), "pricing.view")) {
+    return <NoAccess area="pricing rules" />;
+  }
   const token = await getSessionToken();
   const rules = await apiFetch<PricingRule[]>("/admin/pricing-rules", { token: token! });
 

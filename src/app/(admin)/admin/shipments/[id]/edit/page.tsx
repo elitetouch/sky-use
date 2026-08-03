@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
-import { getSessionToken } from "@/lib/session";
+import { getSessionToken, getCurrentUser, can } from "@/lib/session";
 import type { AdminShipment } from "@/lib/types";
 import { EditShipmentForm } from "@/components/admin/EditShipmentForm";
+import { NoAccess } from "@/components/admin/NoAccess";
 
 export const metadata: Metadata = {
   title: "Edit Shipment",
@@ -11,6 +12,9 @@ export const metadata: Metadata = {
 
 export default async function EditShipmentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!can(await getCurrentUser(), "shipments.edit")) {
+    return <NoAccess area="shipment editing" />;
+  }
   const token = await getSessionToken();
 
   let shipment: AdminShipment;

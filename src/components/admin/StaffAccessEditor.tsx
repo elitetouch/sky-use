@@ -2,25 +2,15 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import type { Staff } from "@/lib/types";
-
-// App areas the super admin can grant a staff member. Order = display order.
-const PERMISSIONS: { value: string; label: string }[] = [
-  { value: "dashboard.view", label: "Dashboard" },
-  { value: "shipments.view", label: "View shipments" },
-  { value: "shipments.manage", label: "Manage shipments (book, edit, status)" },
-  { value: "pricing.manage", label: "Pricing rules" },
-  { value: "customers.view", label: "Customers" },
-  { value: "wallet.view", label: "Wallet" },
-  { value: "settings.manage", label: "Settings (offices, milestones)" },
-  { value: "staff.manage", label: "Staff & access" },
-];
+import type { PermissionGroup, Staff } from "@/lib/types";
 
 export function StaffAccessEditor({
   member,
+  permissionGroups,
   onUpdated,
 }: {
   member: Staff;
+  permissionGroups: PermissionGroup[];
   onUpdated: (updated: Staff) => void;
 }) {
   const rolePermissions = new Set(member.role_permissions ?? []);
@@ -74,30 +64,39 @@ export function StaffAccessEditor({
         are always on. Tick extra areas to grant this person direct access.
       </p>
 
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {PERMISSIONS.map((permission) => {
-          const fromRole = rolePermissions.has(permission.value);
-          const checked = fromRole || selected.has(permission.value);
-          return (
-            <label
-              key={permission.value}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
-                fromRole ? "border-black/5 bg-black/[0.03] text-body" : "border-black/10 text-navy"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={checked}
-                disabled={fromRole}
-                onChange={() => toggle(permission.value)}
-              />
-              <span>
-                {permission.label}
-                {fromRole ? <span className="ml-1 text-xs text-body">(from role)</span> : null}
-              </span>
-            </label>
-          );
-        })}
+      <div className="mt-3 space-y-4">
+        {permissionGroups.map((group) => (
+          <div key={group.group}>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-body">
+              {group.group}
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {group.permissions.map((permission) => {
+                const fromRole = rolePermissions.has(permission.value);
+                const checked = fromRole || selected.has(permission.value);
+                return (
+                  <label
+                    key={permission.value}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                      fromRole ? "border-black/5 bg-black/[0.03] text-body" : "border-black/10 text-navy"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={fromRole}
+                      onChange={() => toggle(permission.value)}
+                    />
+                    <span>
+                      {permission.label}
+                      {fromRole ? <span className="ml-1 text-xs text-body">(from role)</span> : null}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {error ? <p className="mt-2 text-sm text-red">{error}</p> : null}

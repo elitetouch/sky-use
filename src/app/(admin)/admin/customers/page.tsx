@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import { apiFetch } from "@/lib/api";
-import { getSessionToken } from "@/lib/session";
+import { getSessionToken, getCurrentUser, can } from "@/lib/session";
 import type { PaginatedResult, User } from "@/lib/types";
+import { NoAccess } from "@/components/admin/NoAccess";
 
 export const metadata: Metadata = {
   title: "Customers",
 };
 
 export default async function AdminCustomersPage() {
+  if (!can(await getCurrentUser(), "customers.view")) {
+    return <NoAccess area="customers" />;
+  }
   const token = await getSessionToken();
   const { items: customers } = await apiFetch<PaginatedResult<User>>("/admin/customers", { token: token! });
 

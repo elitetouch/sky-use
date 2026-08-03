@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { apiFetch } from "@/lib/api";
-import { getCurrentUser, getSessionToken } from "@/lib/session";
+import { getCurrentUser, getSessionToken, can } from "@/lib/session";
 import type { DashboardMetrics } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
+import { NoAccess } from "@/components/admin/NoAccess";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard",
@@ -11,6 +12,11 @@ export const metadata: Metadata = {
 
 export default async function AdminDashboardPage() {
   const [user, token] = await Promise.all([getCurrentUser(), getSessionToken()]);
+
+  if (!can(user, "dashboard.view")) {
+    return <NoAccess area="the dashboard" />;
+  }
+
   const metrics = await apiFetch<DashboardMetrics>("/admin/dashboard/metrics", { token: token! });
 
   return (
@@ -19,10 +25,12 @@ export default async function AdminDashboardPage() {
       <p className="mt-1 text-body">Shipment and operations overview.</p>
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl bg-navy p-6 text-white">
-          <p className="text-sm text-white/70">Revenue This Month</p>
-          <p className="mt-1 text-2xl font-extrabold">{formatNaira(metrics.revenue_this_month_kobo)}</p>
-        </div>
+        {metrics.revenue_this_month_kobo != null ? (
+          <div className="rounded-2xl bg-navy p-6 text-white">
+            <p className="text-sm text-white/70">Revenue This Month</p>
+            <p className="mt-1 text-2xl font-extrabold">{formatNaira(metrics.revenue_this_month_kobo)}</p>
+          </div>
+        ) : null}
         <div className="rounded-2xl border border-black/5 p-6">
           <p className="text-sm text-body">Total Shipments</p>
           <p className="mt-1 text-2xl font-extrabold text-navy">{metrics.shipments_total}</p>

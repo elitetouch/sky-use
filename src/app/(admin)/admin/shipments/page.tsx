@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
-import { getSessionToken } from "@/lib/session";
+import { getSessionToken, getCurrentUser, can } from "@/lib/session";
 import type { AdminShipment, PaginatedResult, StatusTemplate } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
+import { NoAccess } from "@/components/admin/NoAccess";
 import { ShipmentStatusFilter } from "@/components/admin/ShipmentStatusFilter";
 import { ShipmentPaymentFilter } from "@/components/admin/ShipmentPaymentFilter";
 import { ShipmentDateFilter } from "@/components/admin/ShipmentDateFilter";
@@ -19,6 +20,9 @@ export default async function AdminShipmentsPage({
   searchParams: Promise<{ status_template_id?: string; search?: string; payment?: string; date?: string }>;
 }) {
   const { status_template_id: statusTemplateId, search, payment, date } = await searchParams;
+  if (!can(await getCurrentUser(), "shipments.view")) {
+    return <NoAccess area="shipments" />;
+  }
   const token = await getSessionToken();
 
   const params = new URLSearchParams();

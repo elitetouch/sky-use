@@ -2,10 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { Role, Staff } from "@/lib/types";
+import type { PermissionGroup, Role, Staff } from "@/lib/types";
 import { StaffAccessEditor } from "@/components/admin/StaffAccessEditor";
 
-export function StaffList({ initialStaff, roles }: { initialStaff: Staff[]; roles: Role[] }) {
+export function StaffList({
+  initialStaff,
+  roles,
+  permissionGroups,
+}: {
+  initialStaff: Staff[];
+  roles: Role[];
+  permissionGroups: PermissionGroup[];
+}) {
   const router = useRouter();
   const [staff, setStaff] = useState(initialStaff);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -130,6 +138,7 @@ export function StaffList({ initialStaff, roles }: { initialStaff: Staff[]; role
                 <td colSpan={5} className="px-5 py-4">
                   <StaffAccessEditor
                     member={member}
+                    permissionGroups={permissionGroups}
                     onUpdated={(updated) =>
                       setStaff((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
                     }

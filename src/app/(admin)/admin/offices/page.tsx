@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { apiFetch } from "@/lib/api";
-import { getSessionToken } from "@/lib/session";
+import { getSessionToken, getCurrentUser, can } from "@/lib/session";
 import type { BusinessSetting, Office } from "@/lib/types";
 import { OfficeManager } from "@/components/admin/OfficeManager";
 import { BusinessSettingsManager } from "@/components/admin/BusinessSettingsManager";
+import { NoAccess } from "@/components/admin/NoAccess";
 
 export const metadata: Metadata = {
   title: "Offices",
@@ -12,6 +13,9 @@ export const metadata: Metadata = {
 const EMPTY_BUSINESS: BusinessSetting = { rc_number: null, email: null, website: null, phones: [] };
 
 export default async function AdminOfficesPage() {
+  if (!can(await getCurrentUser(), "offices.manage")) {
+    return <NoAccess area="offices" />;
+  }
   const token = await getSessionToken();
 
   const [offices, business] = await Promise.all([

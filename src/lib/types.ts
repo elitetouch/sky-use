@@ -132,6 +132,9 @@ export type Staff = {
   created_at: string;
 };
 
+export type PermissionOption = { value: string; label: string };
+export type PermissionGroup = { group: string; permissions: PermissionOption[] };
+
 export type StaffInvitation = {
   id: string;
   name: string;
@@ -155,7 +158,7 @@ export type DashboardMetrics = {
   shipments_total: number;
   shipments_by_status: Record<string, number>;
   shipments_delivered_this_month: number;
-  revenue_this_month_kobo: number;
+  revenue_this_month_kobo?: number | null;
   customers_total: number;
   staff_total: number;
   pending_invitations: number;
