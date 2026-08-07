@@ -1,5 +1,11 @@
-// SkyFots PWA service worker — network-first with an offline cache fallback.
-const CACHE = "skyfots-v1";
+// SkyFots PWA service worker.
+// Deliberately caches ONLY immutable static assets. Navigations, HTML and API
+// requests are left to the browser so the SW never interferes with auth
+// redirects (which previously caused redirect loops).
+const CACHE = "skyfots-v2";
+
+const STATIC_PREFIXES = ["/_next/static/", "/icons/", "/brand/", "/assets/"];
+const STATIC_EXT = /\.(?:png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf)$/i;
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -16,32 +22,30 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  const url = new URL(request.url);
+  if (request.method !== "GET") return;
 
-  // Only handle same-origin GETs; never cache API/auth traffic.
-  if (request.method !== "GET" || url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/")) return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  const isStatic =
+    STATIC_PREFIXES.some((prefix) => url.pathname.startsWith(prefix)) || STATIC_EXT.test(url.pathname);
+
+  // Navigations, HTML, and /api are handled natively by the browser.
+  if (!isStatic) return;
 
   event.respondWith(
     (async () => {
+      const cached = await caches.match(request);
+      if (cached) return cached;
       try {
         const response = await fetch(request);
-        if (response && response.ok && response.type === "basic") {
+        if (response.ok && response.type === "basic") {
           const cache = await caches.open(CACHE);
           cache.put(request, response.clone());
         }
         return response;
       } catch {
-        const cached = await caches.match(request);
-        if (cached) return cached;
-        if (request.mode === "navigate") {
-          const shell = await caches.match("/dashboard");
-          if (shell) return shell;
-        }
-        return new Response("You are offline.", {
-          status: 503,
-          headers: { "Content-Type": "text/plain" },
-        });
+        return new Response("", { status: 504 });
       }
     })(),
   );
