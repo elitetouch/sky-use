@@ -4,6 +4,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { getSessionToken, getCurrentUser, can } from "@/lib/session";
 import type { AdminShipment, StatusTemplate } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
+import { formatEstimatedDelivery } from "@/lib/delivery";
 import Link from "next/link";
 import { NoAccess } from "@/components/admin/NoAccess";
 import { UpdateStatusForm } from "@/components/admin/UpdateStatusForm";
@@ -98,6 +99,20 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
                 <p className="text-body">Weight</p>
                 <p className="font-semibold text-navy">{shipment.weight_kg} kg</p>
               </div>
+              {formatEstimatedDelivery(
+                shipment.estimated_delivery_date,
+                shipment.estimated_delivery_window,
+              ) ? (
+                <div>
+                  <p className="text-body">Est. Delivery</p>
+                  <p className="font-semibold text-navy">
+                    {formatEstimatedDelivery(
+                      shipment.estimated_delivery_date,
+                      shipment.estimated_delivery_window,
+                    )}
+                  </p>
+                </div>
+              ) : null}
             </div>
             {shipment.description ? <p className="mt-4 text-sm text-body">{shipment.description}</p> : null}
           </div>

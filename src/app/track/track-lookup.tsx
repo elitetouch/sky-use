@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { formatEstimatedDelivery } from "@/lib/delivery";
 
 type StatusEvent = {
   id: string;
@@ -18,6 +19,8 @@ type Shipment = {
   status_label: string;
   service_label: string;
   weight_kg: string;
+  estimated_delivery_date: string | null;
+  estimated_delivery_window: string | null;
   status_events: StatusEvent[];
 };
 
@@ -93,6 +96,18 @@ export function TrackLookup() {
               {shipment.status_label}
             </span>
           </div>
+
+          {formatEstimatedDelivery(shipment.estimated_delivery_date, shipment.estimated_delivery_window) ? (
+            <div className="mt-6 rounded-xl bg-[#f5f5f7] p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-body">Estimated Delivery</p>
+              <p className="mt-1 text-2xl font-bold text-navy">
+                {formatEstimatedDelivery(
+                  shipment.estimated_delivery_date,
+                  shipment.estimated_delivery_window,
+                )}
+              </p>
+            </div>
+          ) : null}
 
           <div className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
             <div>

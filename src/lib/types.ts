@@ -44,6 +44,8 @@ export type Shipment = {
   service_level: string;
   service_label: string;
   mode: string;
+  estimated_delivery_date: string | null;
+  estimated_delivery_window: string | null;
   weight_kg: string;
   dimensions: Record<string, unknown> | null;
   price_kobo: number | null;

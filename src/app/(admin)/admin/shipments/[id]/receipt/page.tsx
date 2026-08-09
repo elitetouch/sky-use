@@ -5,6 +5,7 @@ import { getSessionToken } from "@/lib/session";
 import type { AdminShipment, BusinessSetting, Office } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { formatPhone } from "@/lib/phone";
+import { formatEstimatedDelivery } from "@/lib/delivery";
 
 type Props = {
   params: Promise<{
@@ -146,6 +147,23 @@ export default async function ShipmentReceiptPage({ params }: Props) {
                 {shipment.status_label}
               </span>
             </div>
+
+            {formatEstimatedDelivery(
+              shipment.estimated_delivery_date,
+              shipment.estimated_delivery_window,
+            ) ? (
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Estimated Delivery
+                </p>
+                <p className="text-lg font-bold text-navy">
+                  {formatEstimatedDelivery(
+                    shipment.estimated_delivery_date,
+                    shipment.estimated_delivery_window,
+                  )}
+                </p>
+              </div>
+            ) : null}
           </div>
 
           {/* Customer */}

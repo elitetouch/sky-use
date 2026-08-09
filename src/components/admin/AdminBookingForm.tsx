@@ -7,6 +7,7 @@ import { AddressFieldset, EMPTY_ADDRESS, type AddressForm } from "@/components/a
 import type { Office, User } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { SERVICE_OPTIONS, DEFAULT_SERVICE } from "@/lib/services";
+import { DELIVERY_WINDOWS } from "@/lib/delivery";
 
 type CustomerMode = "existing" | "new";
 
@@ -39,6 +40,8 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
 
   const [serviceLevel, setServiceLevel] = useState<string>(DEFAULT_SERVICE);
   const [carrier, setCarrier] = useState("");
+  const [estimatedDate, setEstimatedDate] = useState("");
+  const [estimatedWindow, setEstimatedWindow] = useState("By End of Day");
   const [totalWeight, setTotalWeight] = useState("");
   const [note, setNote] = useState("");
   const [declaredValue, setDeclaredValue] = useState("");
@@ -129,6 +132,8 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
       service_level: serviceLevel,
       weight_kg: Number(totalWeight),
       carrier: carrier || undefined,
+      estimated_delivery_date: estimatedDate || undefined,
+      estimated_delivery_window: estimatedDate ? estimatedWindow || undefined : undefined,
       declared_value: declaredValue ? Number(declaredValue) : undefined,
       description: note || undefined,
       items: validItems.map((item) => ({
@@ -369,6 +374,33 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
               placeholder="0"
               className={inputClass}
             />
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-semibold text-navy">Estimated delivery date (optional)</label>
+            <input
+              type="date"
+              value={estimatedDate}
+              onChange={(e) => setEstimatedDate(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-navy">Delivery window</label>
+            <select
+              value={estimatedWindow}
+              onChange={(e) => setEstimatedWindow(e.target.value)}
+              disabled={!estimatedDate}
+              className={`${inputClass} disabled:opacity-50`}
+            >
+              {DELIVERY_WINDOWS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

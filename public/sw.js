@@ -2,7 +2,7 @@
 // Deliberately caches ONLY immutable static assets. Navigations, HTML and API
 // requests are left to the browser so the SW never interferes with auth
 // redirects (which previously caused redirect loops).
-const CACHE = "skyfots-v2";
+const CACHE = "skyfots-v3";
 
 const STATIC_PREFIXES = ["/_next/static/", "/icons/", "/brand/", "/assets/"];
 const STATIC_EXT = /\.(?:png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf)$/i;
