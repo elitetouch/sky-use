@@ -20,7 +20,7 @@ export function DashboardShell({
 }) {
   return (
     <div className="flex min-h-screen bg-[#f7f7f8]">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-black/5 bg-white md:flex print:hidden">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col self-start overflow-y-auto border-r border-black/5 bg-white md:flex print:hidden">
         <div className="border-b border-black/5 px-6 py-5">
           <Logo />
         </div>

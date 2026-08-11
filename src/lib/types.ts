@@ -8,6 +8,7 @@ export type Address = {
   line2: string | null;
   city: string;
   state: string;
+  postal_code: string | null;
   country: string;
   is_default: boolean;
   created_at: string;

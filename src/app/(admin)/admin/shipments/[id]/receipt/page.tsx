@@ -2,7 +2,7 @@ import Image from "next/image";
 import { PrintButton } from "@/components/admin/PrintButton";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import type { AdminShipment, BusinessSetting, Office } from "@/lib/types";
+import type { Address, AdminShipment, BusinessSetting, Office } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { formatPhone } from "@/lib/phone";
 import { formatEstimatedDelivery } from "@/lib/delivery";
@@ -12,6 +12,25 @@ type Props = {
     id: string;
   }>;
 };
+
+function AddressBlock({ address }: { address?: Address }) {
+  if (!address) return null;
+
+  const cityState = [address.city, address.state].filter(Boolean).join(", ");
+  const cityLine = [cityState, address.postal_code].filter(Boolean).join(" ");
+
+  return (
+    <div className="mt-3 text-sm text-gray-700">
+      <p className="font-semibold">{address.contact_name}</p>
+      <p>{address.phone}</p>
+      {address.email ? <p>{address.email}</p> : null}
+      <p className="mt-2">{address.line1}</p>
+      {address.line2 ? <p>{address.line2}</p> : null}
+      {cityLine ? <p>{cityLine}</p> : null}
+      {address.country ? <p>{address.country}</p> : null}
+    </div>
+  );
+}
 
 const EMPTY_BUSINESS: BusinessSetting = {
   rc_number: null,
@@ -183,52 +202,12 @@ export default async function ShipmentReceiptPage({ params }: Props) {
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
             <section className="rounded-lg border p-5">
               <h2 className="text-sm font-bold uppercase text-navy">From</h2>
-
-              <div className="mt-3 text-sm text-gray-700">
-                <p className="font-semibold">
-                  {shipment.sender_address?.contact_name}
-                </p>
-
-                <p>{shipment.sender_address?.phone}</p>
-
-                {shipment.sender_address?.email ? (
-                  <p>{shipment.sender_address.email}</p>
-                ) : null}
-
-                <p className="mt-2">{shipment.sender_address?.line1}</p>
-
-                <p>
-                  {shipment.sender_address?.city}
-                  {shipment.sender_address?.country
-                    ? `, ${shipment.sender_address.country}`
-                    : ""}
-                </p>
-              </div>
+              <AddressBlock address={shipment.sender_address} />
             </section>
 
             <section className="rounded-lg border p-5">
               <h2 className="text-sm font-bold uppercase text-navy">To</h2>
-
-              <div className="mt-3 text-sm text-gray-700">
-                <p className="font-semibold">
-                  {shipment.receiver_address?.contact_name}
-                </p>
-
-                <p>{shipment.receiver_address?.phone}</p>
-
-                {shipment.receiver_address?.email ? (
-                  <p>{shipment.receiver_address.email}</p>
-                ) : null}
-
-                <p className="mt-2">{shipment.receiver_address?.line1}</p>
-
-                <p>
-                  {shipment.receiver_address?.city}
-                  {shipment.receiver_address?.country
-                    ? `, ${shipment.receiver_address.country}`
-                    : ""}
-                </p>
-              </div>
+              <AddressBlock address={shipment.receiver_address} />
             </section>
           </div>
 

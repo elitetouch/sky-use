@@ -35,6 +35,7 @@ function addressToForm(address: Address | undefined): AddressForm {
     line2: address.line2 ?? "",
     city: address.city,
     state: address.state,
+    postal_code: address.postal_code ?? "",
     country: address.country || "Nigeria",
   };
 }
@@ -113,6 +114,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
         line2: sender.line2 || undefined,
         city: sender.city,
         state: sender.state,
+        postal_code: sender.postal_code || undefined,
         country: sender.country || undefined,
       },
       receiver_address: {
@@ -123,6 +125,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
         line2: receiver.line2 || undefined,
         city: receiver.city,
         state: receiver.state,
+        postal_code: receiver.postal_code || undefined,
         country: receiver.country || undefined,
       },
     };

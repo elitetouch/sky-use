@@ -116,6 +116,7 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
         line2: sender.line2 || undefined,
         city: sender.city,
         state: sender.state,
+        postal_code: sender.postal_code || undefined,
         country: sender.country || undefined,
       },
       receiver_address: {
@@ -127,6 +128,7 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
         line2: receiver.line2 || undefined,
         city: receiver.city,
         state: receiver.state,
+        postal_code: receiver.postal_code || undefined,
         country: receiver.country || undefined,
       },
       service_level: serviceLevel,
