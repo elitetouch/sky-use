@@ -21,6 +21,7 @@ export function ShipmentDateFilter({ selected }: { selected: string }) {
     } else {
       params.delete("date");
     }
+    params.delete("page");
     router.push(`/admin/shipments?${params.toString()}`);
   }
 

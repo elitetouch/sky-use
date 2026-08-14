@@ -16,6 +16,7 @@ export function ShipmentSearch({ initialValue }: { initialValue: string }) {
     } else {
       params.delete("search");
     }
+    params.delete("page");
     router.push(`/admin/shipments?${params.toString()}`);
   }
 

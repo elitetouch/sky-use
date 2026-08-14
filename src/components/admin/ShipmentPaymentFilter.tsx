@@ -16,6 +16,7 @@ export function ShipmentPaymentFilter({ selected }: { selected: string }) {
         } else {
           params.delete("payment");
         }
+        params.delete("page");
         router.push(`/admin/shipments?${params.toString()}`);
       }}
       className="w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy"

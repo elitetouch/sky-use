@@ -26,6 +26,7 @@ export function ShipmentStatusFilter({
         } else {
           params.delete("status_template_id");
         }
+        params.delete("page");
         router.push(`/admin/shipments?${params.toString()}`);
       }}
       className={SELECT_CLASS}

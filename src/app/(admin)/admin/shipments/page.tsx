@@ -9,6 +9,7 @@ import { ShipmentStatusFilter } from "@/components/admin/ShipmentStatusFilter";
 import { ShipmentPaymentFilter } from "@/components/admin/ShipmentPaymentFilter";
 import { ShipmentDateFilter } from "@/components/admin/ShipmentDateFilter";
 import { ShipmentSearch } from "@/components/admin/ShipmentSearch";
+import { Pagination } from "@/components/admin/Pagination";
 
 export const metadata: Metadata = {
   title: "Shipments",
@@ -17,9 +18,15 @@ export const metadata: Metadata = {
 export default async function AdminShipmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status_template_id?: string; search?: string; payment?: string; date?: string }>;
+  searchParams: Promise<{
+    status_template_id?: string;
+    search?: string;
+    payment?: string;
+    date?: string;
+    page?: string;
+  }>;
 }) {
-  const { status_template_id: statusTemplateId, search, payment, date } = await searchParams;
+  const { status_template_id: statusTemplateId, search, payment, date, page } = await searchParams;
   if (!can(await getCurrentUser(), "shipments.view")) {
     return <NoAccess area="shipments" />;
   }
@@ -30,8 +37,9 @@ export default async function AdminShipmentsPage({
   if (search) params.set("filter[search]", search);
   if (payment) params.set("filter[payment]", payment);
   if (date) params.set("filter[date]", date);
+  if (page && Number(page) > 1) params.set("page", page);
   const query = params.toString() ? `?${params.toString()}` : "";
-  const [{ items: shipments }, templates] = await Promise.all([
+  const [{ items: shipments, meta }, templates] = await Promise.all([
     apiFetch<PaginatedResult<AdminShipment>>(`/admin/shipments${query}`, { token: token! }),
     // Milestone list powers the filter dropdown only — don't let it crash the
     // list page if the API is unavailable or behind.
@@ -128,6 +136,15 @@ export default async function AdminShipmentsPage({
           </table>
         )}
       </div>
+
+      {shipments.length > 0 ? (
+        <Pagination
+          currentPage={meta.current_page}
+          lastPage={meta.last_page}
+          perPage={meta.per_page ?? shipments.length}
+          total={meta.total}
+        />
+      ) : null}
     </div>
   );
 }
