@@ -24,9 +24,11 @@ export default async function AdminShipmentsPage({
     payment?: string;
     date?: string;
     page?: string;
+    per_page?: string;
   }>;
 }) {
-  const { status_template_id: statusTemplateId, search, payment, date, page } = await searchParams;
+  const { status_template_id: statusTemplateId, search, payment, date, page, per_page: perPage } =
+    await searchParams;
   if (!can(await getCurrentUser(), "shipments.view")) {
     return <NoAccess area="shipments" />;
   }
@@ -38,6 +40,7 @@ export default async function AdminShipmentsPage({
   if (payment) params.set("filter[payment]", payment);
   if (date) params.set("filter[date]", date);
   if (page && Number(page) > 1) params.set("page", page);
+  if (perPage) params.set("per_page", perPage);
   const query = params.toString() ? `?${params.toString()}` : "";
   const [{ items: shipments, meta }, templates] = await Promise.all([
     apiFetch<PaginatedResult<AdminShipment>>(`/admin/shipments${query}`, { token: token! }),
