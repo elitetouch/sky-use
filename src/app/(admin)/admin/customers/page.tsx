@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatDate } from "@/lib/datetime";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken, getCurrentUser, can } from "@/lib/session";
 import type { PaginatedResult, User } from "@/lib/types";
@@ -39,7 +40,7 @@ export default async function AdminCustomersPage() {
                   <td className="px-5 py-4 font-semibold text-navy">{customer.name}</td>
                   <td className="px-5 py-4 text-body">{customer.email}</td>
                   <td className="px-5 py-4 text-body">{customer.phone ?? "—"}</td>
-                  <td className="px-5 py-4 text-body">{new Date(customer.created_at).toLocaleDateString()}</td>
+                  <td className="px-5 py-4 text-body">{formatDate(customer.created_at)}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { formatDate } from "@/lib/datetime";
 import { PrintButton } from "@/components/admin/PrintButton";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
@@ -150,7 +151,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
               <p className="whitespace-nowrap text-sm text-gray-700">
                 <span className="font-semibold text-navy">Date:</span>{" "}
-                {new Date(shipment.created_at).toLocaleDateString()}
+                {formatDate(shipment.created_at)}
               </p>
             </div>
 

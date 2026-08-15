@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatDate } from "@/lib/datetime";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
@@ -60,7 +61,7 @@ export default async function ShipmentsPage() {
                   <td className="px-5 py-4 text-body">
                     {shipment.price_kobo !== null ? formatNaira(shipment.price_kobo) : "—"}
                   </td>
-                  <td className="px-5 py-4 text-body">{new Date(shipment.created_at).toLocaleDateString()}</td>
+                  <td className="px-5 py-4 text-body">{formatDate(shipment.created_at)}</td>
                 </tr>
               ))}
             </tbody>

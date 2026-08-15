@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { formatDateTime } from "@/lib/datetime";
 
 export function PaymentStatusForm({
   shipmentId,
@@ -52,7 +53,7 @@ export function PaymentStatusForm({
             Paid{paymentMethodLabel ? ` · ${paymentMethodLabel}` : ""}
           </span>
           <p className="mt-2 text-xs text-body">
-            Recorded {new Date(paidAt!).toLocaleString()}
+            Recorded {formatDateTime(paidAt!)}
           </p>
           <Button
             type="button"

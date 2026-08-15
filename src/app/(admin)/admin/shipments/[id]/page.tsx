@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatDateTime } from "@/lib/datetime";
 import { notFound } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
 import { getSessionToken, getCurrentUser, can } from "@/lib/session";
@@ -159,7 +160,7 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
                       {event.link}
                     </a>
                   ) : null}
-                  <p className="mt-1 text-xs text-body/70">{new Date(event.created_at).toLocaleString()}</p>
+                  <p className="mt-1 text-xs text-body/70">{formatDateTime(event.created_at)}</p>
                 </li>
               ))}
             </ol>

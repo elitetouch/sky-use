@@ -94,6 +94,8 @@ export type ShipmentItem = {
 };
 
 export type AdminShipment = Shipment & {
+  sender_name: string | null;
+  receiver_name: string | null;
   courier: string | null;
   courier_label: string | null;
   courier_tracking_number: string | null;

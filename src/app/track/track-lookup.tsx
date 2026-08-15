@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { formatEstimatedDelivery } from "@/lib/delivery";
+import { formatDateTime } from "@/lib/datetime";
 
 type StatusEvent = {
   id: string;
@@ -140,7 +141,7 @@ export function TrackLookup() {
                     </a>
                   ) : null}
                   <p className="mt-1 text-xs text-body/70">
-                    {new Date(event.created_at).toLocaleString()}
+                    {formatDateTime(event.created_at)}
                   </p>
                 </li>
               ))}

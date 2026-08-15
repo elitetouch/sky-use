@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatDate } from "@/lib/datetime";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import type { PaginatedResult, Wallet, WalletTransaction } from "@/lib/types";
@@ -63,7 +64,7 @@ export default async function WalletPage() {
                     </td>
                     <td className="px-5 py-4 capitalize text-body">{transaction.status}</td>
                     <td className="px-5 py-4 text-body">
-                      {new Date(transaction.created_at).toLocaleDateString()}
+                      {formatDate(transaction.created_at)}
                     </td>
                   </tr>
                 ))}

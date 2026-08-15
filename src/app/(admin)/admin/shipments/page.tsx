@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatDate } from "@/lib/datetime";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken, getCurrentUser, can } from "@/lib/session";
@@ -82,6 +83,8 @@ export default async function AdminShipmentsPage({
               <tr>
                 <th className="px-5 py-3">Tracking #</th>
                 <th className="px-5 py-3">Customer</th>
+                <th className="px-5 py-3">Sender</th>
+                <th className="px-5 py-3">Receiver</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Price</th>
                 <th className="px-5 py-3">Payment</th>
@@ -103,6 +106,8 @@ export default async function AdminShipmentsPage({
                     </Link>
                   </td>
                   <td className="px-5 py-4 text-body">{shipment.user?.name ?? "—"}</td>
+                  <td className="px-5 py-4 text-body">{shipment.sender_name ?? "—"}</td>
+                  <td className="px-5 py-4 text-body">{shipment.receiver_name ?? "—"}</td>
                   <td className="px-5 py-4">
                     <span className="rounded-full bg-navy/10 px-3 py-1 text-xs font-semibold text-navy">
                       {shipment.status_label}
@@ -124,7 +129,7 @@ export default async function AdminShipmentsPage({
                   </td>
                   <td className="px-5 py-4 text-body">{shipment.booked_by ?? "—"}</td>
                   <td className="px-5 py-4 text-body">{shipment.updated_by ?? "—"}</td>
-                  <td className="px-5 py-4 text-body">{new Date(shipment.created_at).toLocaleDateString()}</td>
+                  <td className="px-5 py-4 text-body">{formatDate(shipment.created_at)}</td>
                   <td className="px-5 py-4 text-right">
                     <Link
                       href={`/admin/shipments/${shipment.id}/receipt`}

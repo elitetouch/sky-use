@@ -30,7 +30,7 @@ export function ShipmentSearch({ initialValue }: { initialValue: string }) {
       <input
         value={term}
         onChange={(e) => setTerm(e.target.value)}
-        placeholder="Search tracking number or customer…"
+        placeholder="Search tracking, customer, sender or receiver…"
         className="w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy"
       />
       <Button type="submit" variant="primary">

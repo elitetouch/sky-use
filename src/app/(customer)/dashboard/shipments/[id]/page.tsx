@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatDate, formatDateTime } from "@/lib/datetime";
 import { notFound } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
@@ -91,7 +92,7 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
                       {event.link}
                     </a>
                   ) : null}
-                  <p className="mt-1 text-xs text-body/70">{new Date(event.created_at).toLocaleString()}</p>
+                  <p className="mt-1 text-xs text-body/70">{formatDateTime(event.created_at)}</p>
                 </li>
               ))}
             </ol>
@@ -129,7 +130,7 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
 
           {shipment.paid_at ? (
             <p className="mt-4 rounded-lg bg-white/10 px-4 py-2 text-sm">
-              Paid on {new Date(shipment.paid_at).toLocaleDateString()}
+              Paid on {formatDate(shipment.paid_at)}
             </p>
           ) : (
             <PayButton shipmentId={shipment.id} />
