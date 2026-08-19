@@ -20,6 +20,9 @@ type Shipment = {
   status_label: string;
   service_label: string;
   weight_kg: string;
+  origin: string | null;
+  destination: string | null;
+  is_delivered: boolean;
   estimated_delivery_date: string | null;
   estimated_delivery_window: string | null;
   status_events: StatusEvent[];
@@ -97,6 +100,30 @@ export function TrackLookup() {
               {shipment.status_label}
             </span>
           </div>
+
+          {shipment.origin || shipment.destination ? (
+            <div className="mt-6 flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-body">Origin</p>
+                <p className="mt-0.5 truncate text-sm font-bold text-navy">{shipment.origin ?? "—"}</p>
+              </div>
+              <div className="flex flex-1 items-center px-1" aria-hidden="true">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-navy" />
+                <span className="h-0.5 flex-1 bg-gradient-to-r from-navy to-red" />
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 -rotate-45 text-red" fill="currentColor">
+                  <path d="M2.5 12l17-8-4 8 4 8-17-8z" />
+                </svg>
+                <span className="h-0.5 flex-1 bg-black/10" />
+                <span
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${shipment.is_delivered ? "bg-red" : "border-2 border-red bg-white"}`}
+                />
+              </div>
+              <div className="min-w-0 flex-1 text-right">
+                <p className="text-xs font-semibold uppercase tracking-wide text-body">Destination</p>
+                <p className="mt-0.5 truncate text-sm font-bold text-navy">{shipment.destination ?? "—"}</p>
+              </div>
+            </div>
+          ) : null}
 
           {formatEstimatedDelivery(shipment.estimated_delivery_date, shipment.estimated_delivery_window) ? (
             <div className="mt-6 rounded-xl bg-[#f5f5f7] p-5">
