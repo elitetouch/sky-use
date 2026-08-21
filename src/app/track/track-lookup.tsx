@@ -110,7 +110,7 @@ export function TrackLookup() {
               <div className="flex flex-1 items-center px-1" aria-hidden="true">
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-navy" />
                 <span className="h-0.5 flex-1 bg-gradient-to-r from-navy to-red" />
-                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-red" fill="currentColor">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 -scale-x-100 text-red" fill="currentColor">
                   <path d="M2.5 12l17-8-4 8 4 8-17-8z" />
                 </svg>
                 <span className="h-0.5 flex-1 bg-black/10" />
