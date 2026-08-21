@@ -10,7 +10,8 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminBookShipmentPage() {
-  if (!can(await getCurrentUser(), "shipments.create")) {
+  const user = await getCurrentUser();
+  if (!can(user, "shipments.create")) {
     return <NoAccess area="Book Shipment" />;
   }
   const token = await getSessionToken();
@@ -22,7 +23,7 @@ export default async function AdminBookShipmentPage() {
       <p className="mt-1 text-body">Book on behalf of a walk-in customer and print their receipt.</p>
 
       <div className="mt-6 max-w-3xl">
-        <AdminBookingForm offices={offices} />
+        <AdminBookingForm offices={offices} canRecordPayment={can(user, "shipments.payment")} />
       </div>
     </div>
   );

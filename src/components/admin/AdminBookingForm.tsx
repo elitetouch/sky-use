@@ -23,7 +23,13 @@ function toNumber(value: string): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-export function AdminBookingForm({ offices }: { offices: Office[] }) {
+export function AdminBookingForm({
+  offices,
+  canRecordPayment,
+}: {
+  offices: Office[];
+  canRecordPayment: boolean;
+}) {
   const router = useRouter();
 
   const [customerMode, setCustomerMode] = useState<CustomerMode>("existing");
@@ -146,8 +152,8 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
       freight: freight ? Number(freight) : undefined,
       insurance: insurance ? Number(insurance) : undefined,
       office_id: officeId || undefined,
-      mark_as_paid: markAsPaid,
-      payment_method: markAsPaid ? paymentMethod : undefined,
+      mark_as_paid: canRecordPayment && markAsPaid,
+      payment_method: canRecordPayment && markAsPaid ? paymentMethod : undefined,
     };
 
     if (customerMode === "existing") {
@@ -511,23 +517,25 @@ export function AdminBookingForm({ offices }: { offices: Office[] }) {
           </div>
         </div>
 
-        <div className="mt-5 border-t border-black/5 pt-5">
-          <label className="flex items-center gap-2 text-sm font-semibold text-navy">
-            <input type="checkbox" checked={markAsPaid} onChange={(e) => setMarkAsPaid(e.target.checked)} />
-            Customer paid at the counter
-          </label>
+        {canRecordPayment ? (
+          <div className="mt-5 border-t border-black/5 pt-5">
+            <label className="flex items-center gap-2 text-sm font-semibold text-navy">
+              <input type="checkbox" checked={markAsPaid} onChange={(e) => setMarkAsPaid(e.target.checked)} />
+              Customer paid at the counter
+            </label>
 
-          {markAsPaid ? (
-            <div className="mt-3 max-w-xs">
-              <label className="block text-sm font-semibold text-navy">Payment method</label>
-              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={inputClass}>
-                <option value="cash">Cash</option>
-                <option value="card">Card</option>
-                <option value="transfer">Bank Transfer</option>
-              </select>
-            </div>
-          ) : null}
-        </div>
+            {markAsPaid ? (
+              <div className="mt-3 max-w-xs">
+                <label className="block text-sm font-semibold text-navy">Payment method</label>
+                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={inputClass}>
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="transfer">Bank Transfer</option>
+                </select>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {error ? <p className="text-sm text-red">{error}</p> : null}
