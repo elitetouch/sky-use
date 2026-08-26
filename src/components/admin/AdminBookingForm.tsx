@@ -7,7 +7,7 @@ import { AddressFieldset, EMPTY_ADDRESS, type AddressForm } from "@/components/a
 import type { Office, User } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { SERVICE_OPTIONS, DEFAULT_SERVICE } from "@/lib/services";
-import { DELIVERY_WINDOWS } from "@/lib/delivery";
+import { DELIVERY_WINDOWS, formatEstimatedDelivery } from "@/lib/delivery";
 
 type CustomerMode = "existing" | "new";
 
@@ -42,7 +42,8 @@ export function AdminBookingForm({
   const [newCustomer, setNewCustomer] = useState({ name: "", email: "", phone: "" });
 
   const [sender, setSender] = useState<AddressForm>(EMPTY_ADDRESS);
-  const [receiver, setReceiver] = useState<AddressForm>(EMPTY_ADDRESS);
+  // Receivers are often international — don't presume a destination country.
+  const [receiver, setReceiver] = useState<AddressForm>({ ...EMPTY_ADDRESS, country: "" });
 
   const [serviceLevel, setServiceLevel] = useState<string>(DEFAULT_SERVICE);
   const [carrier, setCarrier] = useState("");
@@ -65,6 +66,7 @@ export function AdminBookingForm({
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Item amounts are recorded per line but are NOT part of the total.
   const totalAmount = toNumber(handling) + toNumber(freight) + toNumber(insurance);
@@ -93,24 +95,28 @@ export function AdminBookingForm({
     }
   }
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setError(null);
+  const validItems = items.filter((item) => item.description.trim() !== "");
 
+  function validate(): string | null {
     if (customerMode === "existing" && !selectedCustomer) {
-      setError("Search for and select a customer first.");
-      return;
+      return "Search for and select a customer first.";
     }
-
-    const validItems = items.filter((item) => item.description.trim() !== "");
-
+    if (customerMode === "new" && newCustomer.name.trim() === "") {
+      return "Enter the new customer's name.";
+    }
+    if (sender.contact_name.trim() === "" || receiver.contact_name.trim() === "") {
+      return "Sender and receiver contact names are required.";
+    }
+    if (!totalWeight || Number(totalWeight) <= 0) {
+      return "Enter the total weight.";
+    }
     if (validItems.length === 0) {
-      setError("Add at least one item with a description.");
-      return;
+      return "Add at least one item with a description.";
     }
+    return null;
+  }
 
-    setIsSubmitting(true);
-
+  function buildPayload(): Record<string, unknown> {
     const payload: Record<string, unknown> = {
       customer_mode: customerMode,
       sender_address: {
@@ -162,11 +168,32 @@ export function AdminBookingForm({
       payload.new_customer = newCustomer;
     }
 
+    return payload;
+  }
+
+  // Clicking "Book" opens the review sheet first — nothing is saved yet.
+  function handleReview(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setShowPreview(true);
+  }
+
+  async function confirmBooking() {
+    setError(null);
+    setIsSubmitting(true);
+
     try {
       const response = await fetch("/api/admin/shipments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(buildPayload()),
       });
 
       const json = await response.json();
@@ -183,8 +210,20 @@ export function AdminBookingForm({
     }
   }
 
+  const serviceLabel = SERVICE_OPTIONS.find((s) => s.value === serviceLevel)?.label ?? serviceLevel;
+  const officeName = offices.find((o) => o.id === officeId)?.name ?? "—";
+  const estimatedDelivery = formatEstimatedDelivery(estimatedDate, estimatedWindow);
+  const customerName = customerMode === "existing" ? selectedCustomer?.name ?? "—" : newCustomer.name || "—";
+  const customerEmail = customerMode === "existing" ? selectedCustomer?.email ?? "" : newCustomer.email;
+  const placeLabel = (a: AddressForm) =>
+    [a.city, a.country].filter((p) => p && p.trim() !== "").join(", ") || "—";
+  const addressLines = (a: AddressForm) =>
+    [a.line1, a.line2, [a.city, a.state].filter(Boolean).join(", "), a.postal_code, a.country]
+      .filter((p) => p && p.trim() !== "")
+      .join(", ");
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleReview} className="space-y-6">
       <div className="rounded-2xl border border-black/5 p-6">
         <p className="text-sm font-semibold text-navy">Customer</p>
 
@@ -538,11 +577,197 @@ export function AdminBookingForm({
         ) : null}
       </div>
 
-      {error ? <p className="text-sm text-red">{error}</p> : null}
+      {error && !showPreview ? <p className="text-sm text-red">{error}</p> : null}
 
       <Button type="submit" variant="accent" size="lg" disabled={isSubmitting}>
-        {isSubmitting ? "Booking…" : "Book Shipment & Print Receipt"}
+        Review &amp; Book Shipment
       </Button>
+
+      {showPreview ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Review shipment"
+          onClick={() => !isSubmitting && setShowPreview(false)}
+        >
+          <div
+            className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-black/5 px-6 py-5">
+              <div>
+                <h2 className="text-lg font-bold text-navy">Review shipment</h2>
+                <p className="mt-0.5 text-sm text-body">Confirm the details below. Nothing is saved yet.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPreview(false)}
+                disabled={isSubmitting}
+                className="rounded-lg p-1.5 text-body hover:bg-black/5 disabled:opacity-50"
+                aria-label="Close preview"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+              {/* Route */}
+              <div className="flex items-center gap-3 rounded-xl bg-[#f5f5f7] p-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-body">Origin</p>
+                  <p className="mt-0.5 truncate text-sm font-bold text-navy">{placeLabel(sender)}</p>
+                </div>
+                <div className="flex flex-1 items-center px-1" aria-hidden="true">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-navy" />
+                  <span className="h-0.5 flex-1 bg-gradient-to-r from-navy to-red" />
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 -scale-x-100 text-red" fill="currentColor">
+                    <path d="M2.5 12l17-8-4 8 4 8-17-8z" />
+                  </svg>
+                  <span className="h-0.5 flex-1 bg-black/10" />
+                  <span className="h-2 w-2 shrink-0 rounded-full border-2 border-red bg-white" />
+                </div>
+                <div className="min-w-0 flex-1 text-right">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-body">Destination</p>
+                  <p className="mt-0.5 truncate text-sm font-bold text-navy">{placeLabel(receiver)}</p>
+                </div>
+              </div>
+
+              {/* Customer */}
+              <section>
+                <p className="text-xs font-semibold uppercase tracking-wide text-body">Customer</p>
+                <p className="mt-1 text-sm font-semibold text-navy">{customerName}</p>
+                {customerEmail ? <p className="text-sm text-body">{customerEmail}</p> : null}
+              </section>
+
+              {/* Sender & receiver */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <section className="rounded-xl border border-black/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-body">Sender</p>
+                  <p className="mt-1 text-sm font-semibold text-navy">{sender.contact_name || "—"}</p>
+                  {sender.phone ? <p className="text-sm text-body">{sender.phone}</p> : null}
+                  <p className="mt-1 text-sm text-body">{addressLines(sender) || "—"}</p>
+                </section>
+                <section className="rounded-xl border border-black/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-body">Receiver</p>
+                  <p className="mt-1 text-sm font-semibold text-navy">{receiver.contact_name || "—"}</p>
+                  {receiver.phone ? <p className="text-sm text-body">{receiver.phone}</p> : null}
+                  <p className="mt-1 text-sm text-body">{addressLines(receiver) || "—"}</p>
+                </section>
+              </div>
+
+              {/* Package */}
+              <section className="rounded-xl border border-black/5 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-body">Package</p>
+                <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div>
+                    <dt className="text-body">Service</dt>
+                    <dd className="font-semibold text-navy">{serviceLabel}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-body">Total weight</dt>
+                    <dd className="font-semibold text-navy">{totalWeight || "0"} kg</dd>
+                  </div>
+                  <div>
+                    <dt className="text-body">Booking office</dt>
+                    <dd className="font-semibold text-navy">{officeName}</dd>
+                  </div>
+                  {carrier ? (
+                    <div>
+                      <dt className="text-body">Carrier</dt>
+                      <dd className="font-semibold text-navy">{carrier}</dd>
+                    </div>
+                  ) : null}
+                  {estimatedDelivery ? (
+                    <div className="col-span-2">
+                      <dt className="text-body">Estimated delivery</dt>
+                      <dd className="font-semibold text-navy">{estimatedDelivery}</dd>
+                    </div>
+                  ) : null}
+                  {note ? (
+                    <div className="col-span-2">
+                      <dt className="text-body">Note</dt>
+                      <dd className="text-navy">{note}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </section>
+
+              {/* Items */}
+              <section className="rounded-xl border border-black/5 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-body">Items</p>
+                <ul className="mt-2 divide-y divide-black/5 text-sm">
+                  {validItems.map((item, i) => (
+                    <li key={i} className="flex justify-between gap-4 py-1.5">
+                      <span className="text-navy">{item.description}</span>
+                      <span className="shrink-0 text-body">
+                        {toNumber(item.amount) > 0 ? formatNaira(Math.round(toNumber(item.amount) * 100)) : "—"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              {/* Charges */}
+              <section className="rounded-xl bg-[#f5f5f7] p-4 text-sm">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-body">Freight</span>
+                    <span className="text-navy">{formatNaira(Math.round(toNumber(freight) * 100))}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-body">Handling</span>
+                    <span className="text-navy">{formatNaira(Math.round(toNumber(handling) * 100))}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-body">Insurance</span>
+                    <span className="text-navy">{formatNaira(Math.round(toNumber(insurance) * 100))}</span>
+                  </div>
+                  {declaredValue ? (
+                    <div className="flex justify-between">
+                      <span className="text-body">Declared value</span>
+                      <span className="text-navy">{formatNaira(Math.round(Number(declaredValue) * 100))}</span>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="mt-3 flex justify-between border-t border-black/10 pt-3 text-base">
+                  <span className="font-semibold text-navy">Total amount</span>
+                  <span className="font-extrabold text-navy">{formatNaira(Math.round(totalAmount * 100))}</span>
+                </div>
+                <div className="mt-2 flex justify-between">
+                  <span className="text-body">Payment</span>
+                  <span className="font-semibold text-navy">
+                    {canRecordPayment && markAsPaid
+                      ? `Paid at counter · ${paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}`
+                      : "Pending"}
+                  </span>
+                </div>
+              </section>
+
+              {error ? <p className="text-sm text-red">{error}</p> : null}
+            </div>
+
+            {/* Footer */}
+            <div className="flex flex-col-reverse gap-3 border-t border-black/5 px-6 py-4 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowPreview(false)}
+                disabled={isSubmitting}
+              >
+                Edit details
+              </Button>
+              <Button type="button" variant="accent" onClick={confirmBooking} disabled={isSubmitting}>
+                {isSubmitting ? "Booking…" : "Confirm & Book"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </form>
   );
 }
