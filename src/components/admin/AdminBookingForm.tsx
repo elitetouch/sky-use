@@ -47,6 +47,7 @@ export function AdminBookingForm({
 
   const [serviceLevel, setServiceLevel] = useState<string>(DEFAULT_SERVICE);
   const [carrier, setCarrier] = useState("");
+  const [terminalShipmentId, setTerminalShipmentId] = useState("");
   const [estimatedDate, setEstimatedDate] = useState("");
   const [estimatedWindow, setEstimatedWindow] = useState("By End of Day");
   const [totalWeight, setTotalWeight] = useState("");
@@ -146,6 +147,7 @@ export function AdminBookingForm({
       service_level: serviceLevel,
       weight_kg: Number(totalWeight),
       carrier: carrier || undefined,
+      terminal_shipment_id: terminalShipmentId.trim() || undefined,
       estimated_delivery_date: estimatedDate || undefined,
       estimated_delivery_window: estimatedDate ? estimatedWindow || undefined : undefined,
       declared_value: declaredValue ? Number(declaredValue) : undefined,
@@ -451,6 +453,20 @@ export function AdminBookingForm({
           </div>
         </div>
 
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-navy">Terminal tracking number (optional)</label>
+          <input
+            value={terminalShipmentId}
+            onChange={(e) => setTerminalShipmentId(e.target.value)}
+            placeholder="e.g. SH-16380611554"
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-body">
+            Terminal Africa shipment ID for DHL/UPS/FedEx. When set, live tracking is pulled from Terminal and
+            stays masked behind the SkyFots tracking number.
+          </p>
+        </div>
+
         {/* Line items */}
         <div className="mt-6 border-t border-black/5 pt-5">
           <div className="flex items-center justify-between">
@@ -680,6 +696,12 @@ export function AdminBookingForm({
                     <div>
                       <dt className="text-body">Carrier</dt>
                       <dd className="font-semibold text-navy">{carrier}</dd>
+                    </div>
+                  ) : null}
+                  {terminalShipmentId.trim() ? (
+                    <div>
+                      <dt className="text-body">Terminal tracking #</dt>
+                      <dd className="font-semibold text-navy">{terminalShipmentId.trim()}</dd>
                     </div>
                   ) : null}
                   {estimatedDelivery ? (

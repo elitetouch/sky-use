@@ -45,6 +45,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
 
   const [serviceLevel, setServiceLevel] = useState(shipment.service_level);
   const [carrier, setCarrier] = useState(shipment.carrier ?? "");
+  const [terminalShipmentId, setTerminalShipmentId] = useState(shipment.terminal_shipment_id ?? "");
   const [estimatedDate, setEstimatedDate] = useState(shipment.estimated_delivery_date ?? "");
   const [estimatedWindow, setEstimatedWindow] = useState(
     shipment.estimated_delivery_window ?? "By End of Day",
@@ -95,6 +96,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
       service_level: serviceLevel,
       weight_kg: Number(totalWeight),
       carrier: carrier || undefined,
+      terminal_shipment_id: terminalShipmentId.trim() || null,
       estimated_delivery_date: estimatedDate || null,
       estimated_delivery_window: estimatedDate ? estimatedWindow || null : null,
       declared_value: declaredValue ? Number(declaredValue) : undefined,
@@ -184,6 +186,20 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
               className={inputClass}
             />
           </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-navy">Terminal tracking number (optional)</label>
+          <input
+            value={terminalShipmentId}
+            onChange={(e) => setTerminalShipmentId(e.target.value)}
+            placeholder="e.g. SH-16380611554"
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-body">
+            Terminal Africa shipment ID for DHL/UPS/FedEx. Live tracking is pulled from Terminal and stays
+            masked behind the SkyFots tracking number.
+          </p>
         </div>
 
         <div className="mt-4">
