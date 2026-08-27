@@ -146,6 +146,7 @@ export function AdminBookingForm({
       setTerminalShipmentId(typeof data.terminal_shipment_id === "string" ? data.terminal_shipment_id : id);
       if (typeof data.carrier === "string") setCarrier(data.carrier);
       if (typeof data.weight_kg === "number") setTotalWeight(String(data.weight_kg));
+      if (typeof data.declared_value === "number") setDeclaredValue(String(data.declared_value));
 
       const importedItems: LineItem[] = Array.isArray(data.items)
         ? data.items
