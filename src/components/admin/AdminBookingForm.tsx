@@ -69,6 +69,11 @@ export function AdminBookingForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  const [importId, setImportId] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  const [importNote, setImportNote] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
   // Item amounts are recorded per line but are NOT part of the total.
   const totalAmount = toNumber(handling) + toNumber(freight) + toNumber(insurance);
 
@@ -93,6 +98,90 @@ export function AdminBookingForm({
       setSearchResults(json.data?.items ?? []);
     } finally {
       setIsSearching(false);
+    }
+  }
+
+  // Map a Terminal-imported address (nulls allowed) onto our form shape.
+  function toAddressForm(a: Record<string, unknown> | null | undefined): AddressForm {
+    const s = (v: unknown) => (typeof v === "string" ? v : "");
+    return {
+      ...EMPTY_ADDRESS,
+      label: "",
+      contact_name: s(a?.contact_name),
+      phone: s(a?.phone),
+      email: s(a?.email),
+      line1: s(a?.line1),
+      line2: s(a?.line2),
+      city: s(a?.city),
+      state: s(a?.state),
+      postal_code: s(a?.postal_code),
+      country: s(a?.country) || EMPTY_ADDRESS.country,
+    };
+  }
+
+  // Paste a Terminal shipment id (SH-…) → pull the shipment and pre-fill the form.
+  async function handleImport() {
+    const id = importId.trim();
+    if (id === "") return;
+
+    setImportError(null);
+    setImportNote(null);
+    setIsImporting(true);
+
+    try {
+      const response = await fetch(`/api/admin/shipments/terminal-import/${encodeURIComponent(id)}`);
+      const json = await response.json();
+
+      if (!response.ok) {
+        setImportError(json.message ?? "Could not fetch this shipment from Terminal.");
+        return;
+      }
+
+      const data = json.data ?? {};
+      const senderForm = toAddressForm(data.sender_address);
+      const receiverForm = toAddressForm(data.receiver_address);
+
+      setSender(senderForm);
+      setReceiver(receiverForm);
+      setTerminalShipmentId(typeof data.terminal_shipment_id === "string" ? data.terminal_shipment_id : id);
+      if (typeof data.carrier === "string") setCarrier(data.carrier);
+      if (typeof data.weight_kg === "number") setTotalWeight(String(data.weight_kg));
+
+      const importedItems: LineItem[] = Array.isArray(data.items)
+        ? data.items
+            .filter((it: { description?: unknown }) => typeof it?.description === "string" && it.description.trim() !== "")
+            .map((it: { description: string; cost?: unknown }) => ({
+              description: it.description,
+              amount: typeof it.cost === "number" ? String(it.cost) : "",
+            }))
+        : [];
+      setItems(importedItems.length > 0 ? importedItems : [{ ...EMPTY_ITEM }]);
+
+      // Resolve the owner from the sender's email: reuse an existing SkyFots
+      // account if the email matches, otherwise pre-fill a new customer.
+      let matched: User | null = null;
+      if (senderForm.email) {
+        const res = await fetch(`/api/admin/customers?search=${encodeURIComponent(senderForm.email)}`);
+        const cj = await res.json();
+        const items: User[] = cj.data?.items ?? [];
+        matched = items.find((u) => u.email?.toLowerCase() === senderForm.email.toLowerCase()) ?? null;
+      }
+
+      if (matched) {
+        setCustomerMode("existing");
+        setSelectedCustomer(matched);
+        setImportNote(`Imported from Terminal. Owner matched to existing customer ${matched.name}. Review and book.`);
+      } else {
+        setCustomerMode("new");
+        setNewCustomer({
+          name: senderForm.contact_name,
+          email: senderForm.email,
+          phone: senderForm.phone,
+        });
+        setImportNote("Imported from Terminal. A new customer will be created from the sender. Review and book.");
+      }
+    } finally {
+      setIsImporting(false);
     }
   }
 
@@ -226,6 +315,27 @@ export function AdminBookingForm({
 
   return (
     <form onSubmit={handleReview} className="space-y-6">
+      <div className="rounded-2xl border border-navy/15 bg-navy/[0.03] p-6">
+        <p className="text-sm font-semibold text-navy">Import from Terminal</p>
+        <p className="mt-1 text-xs text-body">
+          Paste a Terminal shipment ID (SH-…) to pull the sender, receiver, weight and items automatically.
+          You&apos;ll still confirm the emails, price and service before booking.
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            value={importId}
+            onChange={(e) => setImportId(e.target.value)}
+            placeholder="e.g. SH-16380611554"
+            className={`${inputClass} mt-0 sm:flex-1`}
+          />
+          <Button type="button" variant="primary" onClick={handleImport} disabled={isImporting || !importId.trim()}>
+            {isImporting ? "Fetching…" : "Fetch from Terminal"}
+          </Button>
+        </div>
+        {importError ? <p className="mt-2 text-sm text-red">{importError}</p> : null}
+        {importNote ? <p className="mt-2 text-sm text-green-700">{importNote}</p> : null}
+      </div>
+
       <div className="rounded-2xl border border-black/5 p-6">
         <p className="text-sm font-semibold text-navy">Customer</p>
 
