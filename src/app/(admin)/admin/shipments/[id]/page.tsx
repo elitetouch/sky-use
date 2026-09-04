@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { formatDateTime } from "@/lib/datetime";
+import { ShipmentTimeline } from "@/components/admin/ShipmentTimeline";
 import { notFound } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
 import { getSessionToken, getCurrentUser, can } from "@/lib/session";
@@ -141,30 +141,12 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
             ) : null}
           </div>
 
-          <div className="rounded-2xl border border-black/5 p-6">
-            <p className="text-sm font-semibold text-navy">Shipment Timeline</p>
-            <ol className="mt-4 space-y-4 border-l-2 border-navy/10 pl-4">
-              {(shipment.status_events ?? []).map((event) => (
-                <li key={event.id} className="relative">
-                  <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-red" />
-                  <p className="text-sm font-semibold text-navy">{event.label}</p>
-                  {event.location ? <p className="text-xs text-body">{event.location}</p> : null}
-                  {event.note ? <p className="text-xs text-body">{event.note}</p> : null}
-                  {event.link ? (
-                    <a
-                      href={event.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-0.5 inline-block break-all text-xs font-semibold text-red hover:underline"
-                    >
-                      {event.link}
-                    </a>
-                  ) : null}
-                  <p className="mt-1 text-xs text-body/70">{formatDateTime(event.created_at)}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
+          <ShipmentTimeline
+            shipmentId={shipment.id}
+            events={shipment.status_events ?? []}
+            templates={templates}
+            canEdit={can(user, "shipments.tracking")}
+          />
         </div>
 
         <div className="space-y-6">
