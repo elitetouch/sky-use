@@ -143,6 +143,13 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
     };
   }
 
+  function destinationCountry(): string {
+    if (receiverMode === "saved") {
+      return addresses.find((a) => a.id === receiverId)?.country ?? "";
+    }
+    return receiverNew.country;
+  }
+
   async function fetchQuote() {
     setIsQuoting(true);
     setQuote(null);
@@ -150,7 +157,12 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
       const response = await fetch("/api/quotes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weight_kg: Number(weightKg), service_level: serviceLevel, mode }),
+        body: JSON.stringify({
+          weight_kg: Number(weightKg),
+          service_level: serviceLevel,
+          mode,
+          destination_country: destinationCountry() || undefined,
+        }),
       });
       const json = await response.json();
       if (!response.ok) {
