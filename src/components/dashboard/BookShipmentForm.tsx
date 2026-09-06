@@ -1,37 +1,72 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { Address } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
+import { SERVICE_OPTIONS, DEFAULT_SERVICE } from "@/lib/services";
 
 type Quote = { price_kobo: number };
 type Item = { description: string; quantity: string; value: string };
+type AddressForm = {
+  label: string;
+  contact_name: string;
+  phone: string;
+  email: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+};
+type Mode = "saved" | "new";
 
 const STEPS = ["Route", "Package", "Review"] as const;
 const EMPTY_ITEM: Item = { description: "", quantity: "1", value: "" };
+const emptyAddress = (country = ""): AddressForm => ({
+  label: "",
+  contact_name: "",
+  phone: "",
+  email: "",
+  line1: "",
+  line2: "",
+  city: "",
+  state: "",
+  postal_code: "",
+  country,
+});
 
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
+const smallInput =
+  "w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy";
 
 function fullAddress(a: Address): string {
-  return [a.line1, a.line2, [a.city, a.state].filter(Boolean).join(", "), a.country]
-    .filter(Boolean)
-    .join(", ");
+  return [a.line1, a.line2, [a.city, a.state].filter(Boolean).join(", "), a.country].filter(Boolean).join(", ");
+}
+function newAddressSummary(a: AddressForm): string {
+  return [a.line1, a.line2, [a.city, a.state].filter(Boolean).join(", "), a.country].filter(Boolean).join(", ");
 }
 
 export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
   const router = useRouter();
+  const hasSaved = addresses.length > 0;
 
   const [step, setStep] = useState(0);
-  const [senderAddressId, setSenderAddressId] = useState(addresses[0]?.id ?? "");
-  const [receiverAddressId, setReceiverAddressId] = useState(addresses[1]?.id ?? "");
+
+  const [senderMode, setSenderMode] = useState<Mode>(hasSaved ? "saved" : "new");
+  const [senderId, setSenderId] = useState(addresses[0]?.id ?? "");
+  const [senderNew, setSenderNew] = useState<AddressForm>(emptyAddress("Nigeria"));
+
+  const [receiverMode, setReceiverMode] = useState<Mode>(hasSaved ? "saved" : "new");
+  const [receiverId, setReceiverId] = useState(addresses[1]?.id ?? "");
+  const [receiverNew, setReceiverNew] = useState<AddressForm>(emptyAddress(""));
 
   const [description, setDescription] = useState("");
   const [weightKg, setWeightKg] = useState("1");
-  const [serviceLevel, setServiceLevel] = useState("standard");
+  const [serviceLevel, setServiceLevel] = useState<string>(DEFAULT_SERVICE);
   const [mode, setMode] = useState("local");
   const [items, setItems] = useState<Item[]>([{ ...EMPTY_ITEM }]);
 
@@ -40,28 +75,36 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
   const [isQuoting, setIsQuoting] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
 
-  const sender = addresses.find((a) => a.id === senderAddressId) ?? null;
-  const receiver = addresses.find((a) => a.id === receiverAddressId) ?? null;
   const filledItems = items.filter((i) => i.description.trim() !== "");
+  const serviceLabel = SERVICE_OPTIONS.find((s) => s.value === serviceLevel)?.label ?? serviceLevel;
 
   function updateItem(index: number, patch: Partial<Item>) {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)));
   }
-  function addItem() {
-    setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
-  }
-  function removeItem(index: number) {
-    setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)));
+
+  function addressValid(m: Mode, id: string, form: AddressForm): boolean {
+    if (m === "saved") return id !== "";
+    return (
+      form.contact_name.trim() !== "" &&
+      form.phone.trim() !== "" &&
+      form.line1.trim() !== "" &&
+      form.city.trim() !== "" &&
+      form.state.trim() !== ""
+    );
   }
 
   function next() {
     setError(null);
     if (step === 0) {
-      if (!senderAddressId || !receiverAddressId) {
-        setError("Choose both a sender and a receiver address.");
+      if (!addressValid(senderMode, senderId, senderNew)) {
+        setError("Complete the sender address (name, phone, address, city, state).");
         return;
       }
-      if (senderAddressId === receiverAddressId) {
+      if (!addressValid(receiverMode, receiverId, receiverNew)) {
+        setError("Complete the receiver address (name, phone, address, city, state).");
+        return;
+      }
+      if (senderMode === "saved" && receiverMode === "saved" && senderId === receiverId) {
         setError("Sender and receiver addresses must be different.");
         return;
       }
@@ -71,9 +114,6 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
         setError("Enter the package weight.");
         return;
       }
-    }
-    if (step === 1) {
-      // Entering Review — fetch the instant price.
       void fetchQuote();
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -82,6 +122,25 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
   function back() {
     setError(null);
     setStep((s) => Math.max(s - 1, 0));
+  }
+
+  function addressPayload(m: Mode, id: string, form: AddressForm) {
+    if (m === "saved") return { address_id: id, address: undefined };
+    return {
+      address_id: undefined,
+      address: {
+        label: form.label || undefined,
+        contact_name: form.contact_name,
+        phone: form.phone,
+        email: form.email || undefined,
+        line1: form.line1,
+        line2: form.line2 || undefined,
+        city: form.city,
+        state: form.state,
+        postal_code: form.postal_code || undefined,
+        country: form.country || undefined,
+      },
+    };
   }
 
   async function fetchQuote() {
@@ -95,7 +154,7 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
       });
       const json = await response.json();
       if (!response.ok) {
-        setError(json.message ?? "Unable to calculate a price.");
+        setError("Pricing isn't available for this service and route yet. Please choose another service.");
         return;
       }
       setQuote(json.data);
@@ -108,12 +167,16 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
     setError(null);
     setIsBooking(true);
     try {
+      const sender = addressPayload(senderMode, senderId, senderNew);
+      const receiver = addressPayload(receiverMode, receiverId, receiverNew);
       const response = await fetch("/api/shipments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sender_address_id: senderAddressId,
-          receiver_address_id: receiverAddressId,
+          sender_address_id: sender.address_id,
+          sender_address: sender.address,
+          receiver_address_id: receiver.address_id,
+          receiver_address: receiver.address,
           weight_kg: Number(weightKg),
           service_level: serviceLevel,
           mode,
@@ -138,6 +201,16 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
     }
   }
 
+  const routeSummary = (m: Mode, id: string, form: AddressForm) => {
+    if (m === "saved") {
+      const a = addresses.find((x) => x.id === id);
+      return a ? { name: a.contact_name, addr: fullAddress(a) } : { name: "—", addr: "" };
+    }
+    return { name: form.contact_name, addr: newAddressSummary(form) };
+  };
+  const senderSummary = routeSummary(senderMode, senderId, senderNew);
+  const receiverSummary = routeSummary(receiverMode, receiverId, receiverNew);
+
   return (
     <div className="space-y-6">
       {/* Stepper */}
@@ -160,28 +233,31 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
       </ol>
 
       <div className="rounded-2xl border border-black/5 p-6">
-        {/* Step 1 — Route */}
         {step === 0 ? (
-          <div className="space-y-5">
-            <AddressPicker
+          <div className="space-y-6">
+            <AddressSection
               title="Ship from"
               addresses={addresses}
-              selectedId={senderAddressId}
-              onSelect={setSenderAddressId}
+              mode={senderMode}
+              setMode={setSenderMode}
+              selectedId={senderId}
+              setSelectedId={setSenderId}
+              form={senderNew}
+              setForm={setSenderNew}
             />
-            <AddressPicker
+            <AddressSection
               title="Ship to"
               addresses={addresses}
-              selectedId={receiverAddressId}
-              onSelect={setReceiverAddressId}
+              mode={receiverMode}
+              setMode={setReceiverMode}
+              selectedId={receiverId}
+              setSelectedId={setReceiverId}
+              form={receiverNew}
+              setForm={setReceiverNew}
             />
-            <Link href="/dashboard/addresses" className="inline-block text-sm font-semibold text-navy hover:text-red">
-              + Manage addresses
-            </Link>
           </div>
         ) : null}
 
-        {/* Step 2 — Package */}
         {step === 1 ? (
           <div className="space-y-5">
             <div>
@@ -209,8 +285,11 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
               <div>
                 <label className="block text-sm font-semibold text-navy">Service</label>
                 <select value={serviceLevel} onChange={(e) => setServiceLevel(e.target.value)} className={inputClass}>
-                  <option value="standard">Standard</option>
-                  <option value="express">Express</option>
+                  {SERVICE_OPTIONS.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -225,7 +304,11 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
             <div>
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-navy">What&apos;s inside? (optional)</label>
-                <button type="button" onClick={addItem} className="text-xs font-semibold text-navy hover:text-red">
+                <button
+                  type="button"
+                  onClick={() => setItems((p) => [...p, { ...EMPTY_ITEM }])}
+                  className="text-xs font-semibold text-navy hover:text-red"
+                >
                   + Add item
                 </button>
               </div>
@@ -236,7 +319,7 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
                       value={item.description}
                       onChange={(e) => updateItem(i, { description: e.target.value })}
                       placeholder="Item (e.g. Shoes)"
-                      className="col-span-6 rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy"
+                      className={`col-span-6 ${smallInput}`}
                     />
                     <input
                       type="number"
@@ -244,7 +327,7 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
                       value={item.quantity}
                       onChange={(e) => updateItem(i, { quantity: e.target.value })}
                       placeholder="Qty"
-                      className="col-span-2 rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy"
+                      className={`col-span-2 ${smallInput}`}
                     />
                     <input
                       type="number"
@@ -252,11 +335,11 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
                       value={item.value}
                       onChange={(e) => updateItem(i, { value: e.target.value })}
                       placeholder="Value ₦"
-                      className="col-span-3 rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy"
+                      className={`col-span-3 ${smallInput}`}
                     />
                     <button
                       type="button"
-                      onClick={() => removeItem(i)}
+                      onClick={() => setItems((p) => (p.length === 1 ? p : p.filter((_, idx) => idx !== i)))}
                       className="col-span-1 text-red hover:text-red/70"
                       aria-label="Remove item"
                     >
@@ -269,19 +352,18 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
           </div>
         ) : null}
 
-        {/* Step 3 — Review */}
         {step === 2 ? (
           <div className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl border border-black/5 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-body">Ship from</p>
-                <p className="mt-1 text-sm font-semibold text-navy">{sender?.contact_name}</p>
-                <p className="text-xs text-body">{sender ? fullAddress(sender) : ""}</p>
+                <p className="mt-1 text-sm font-semibold text-navy">{senderSummary.name}</p>
+                <p className="text-xs text-body">{senderSummary.addr}</p>
               </div>
               <div className="rounded-xl border border-black/5 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-body">Ship to</p>
-                <p className="mt-1 text-sm font-semibold text-navy">{receiver?.contact_name}</p>
-                <p className="text-xs text-body">{receiver ? fullAddress(receiver) : ""}</p>
+                <p className="mt-1 text-sm font-semibold text-navy">{receiverSummary.name}</p>
+                <p className="text-xs text-body">{receiverSummary.addr}</p>
               </div>
             </div>
 
@@ -293,14 +375,13 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
                 </div>
                 <div>
                   <p className="text-body">Service</p>
-                  <p className="font-semibold capitalize text-navy">{serviceLevel}</p>
+                  <p className="font-semibold text-navy">{serviceLabel}</p>
                 </div>
                 <div>
                   <p className="text-body">Mode</p>
                   <p className="font-semibold capitalize text-navy">{mode}</p>
                 </div>
               </div>
-              {description ? <p className="mt-3 text-body">Description: <span className="text-navy">{description}</span></p> : null}
               {filledItems.length > 0 ? (
                 <ul className="mt-3 divide-y divide-black/5">
                   {filledItems.map((it, i) => (
@@ -329,7 +410,6 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
 
         {error ? <p className="mt-4 text-sm text-red">{error}</p> : null}
 
-        {/* Nav */}
         <div className="mt-6 flex items-center justify-between gap-3">
           {step > 0 ? (
             <Button type="button" variant="ghost" onClick={back} disabled={isBooking}>
@@ -343,12 +423,7 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
               Continue
             </Button>
           ) : (
-            <Button
-              type="button"
-              variant="accent"
-              onClick={confirmBooking}
-              disabled={isBooking || isQuoting || !quote}
-            >
+            <Button type="button" variant="accent" onClick={confirmBooking} disabled={isBooking || isQuoting || !quote}>
               {isBooking ? "Booking…" : "Confirm & Book"}
             </Button>
           )}
@@ -358,43 +433,88 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
   );
 }
 
-function AddressPicker({
+function AddressSection({
   title,
   addresses,
+  mode,
+  setMode,
   selectedId,
-  onSelect,
+  setSelectedId,
+  form,
+  setForm,
 }: {
   title: string;
   addresses: Address[];
+  mode: Mode;
+  setMode: (m: Mode) => void;
   selectedId: string;
-  onSelect: (id: string) => void;
+  setSelectedId: (id: string) => void;
+  form: AddressForm;
+  setForm: (updater: (prev: AddressForm) => AddressForm) => void;
 }) {
+  const hasSaved = addresses.length > 0;
+  const set = (field: keyof AddressForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
   return (
     <div>
-      <p className="text-sm font-semibold text-navy">{title}</p>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-        {addresses.map((a) => {
-          const selected = a.id === selectedId;
-          return (
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-navy">{title}</p>
+        {hasSaved ? (
+          <div className="flex gap-1 rounded-lg bg-black/5 p-0.5 text-xs font-semibold">
             <button
-              key={a.id}
               type="button"
-              onClick={() => onSelect(a.id)}
-              className={`rounded-xl border p-3 text-left transition-colors ${
-                selected ? "border-navy bg-navy/[0.04]" : "border-black/10 hover:border-navy/40"
-              }`}
+              onClick={() => setMode("saved")}
+              className={`rounded-md px-3 py-1 ${mode === "saved" ? "bg-white text-navy shadow-sm" : "text-body"}`}
             >
-              <p className="text-sm font-semibold text-navy">
-                {a.label ? `${a.label} — ` : ""}
-                {a.contact_name}
-              </p>
-              <p className="text-xs text-body">
-                {[a.city, a.state, a.country].filter(Boolean).join(", ")}
-              </p>
+              Saved
             </button>
-          );
-        })}
+            <button
+              type="button"
+              onClick={() => setMode("new")}
+              className={`rounded-md px-3 py-1 ${mode === "new" ? "bg-white text-navy shadow-sm" : "text-body"}`}
+            >
+              New address
+            </button>
+          </div>
+        ) : null}
       </div>
+
+      {mode === "saved" && hasSaved ? (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {addresses.map((a) => {
+            const selected = a.id === selectedId;
+            return (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setSelectedId(a.id)}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  selected ? "border-navy bg-navy/[0.04]" : "border-black/10 hover:border-navy/40"
+                }`}
+              >
+                <p className="text-sm font-semibold text-navy">
+                  {a.label ? `${a.label} — ` : ""}
+                  {a.contact_name}
+                </p>
+                <p className="text-xs text-body">{[a.city, a.state, a.country].filter(Boolean).join(", ")}</p>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <input value={form.contact_name} onChange={set("contact_name")} placeholder="Full name" className={smallInput} />
+          <input value={form.phone} onChange={set("phone")} placeholder="Phone" className={smallInput} />
+          <input value={form.email} onChange={set("email")} placeholder="Email (optional)" className={`col-span-2 ${smallInput}`} />
+          <input value={form.line1} onChange={set("line1")} placeholder="Address line 1" className={`col-span-2 ${smallInput}`} />
+          <input value={form.line2} onChange={set("line2")} placeholder="Address line 2 (optional)" className={`col-span-2 ${smallInput}`} />
+          <input value={form.city} onChange={set("city")} placeholder="City" className={smallInput} />
+          <input value={form.state} onChange={set("state")} placeholder="State" className={smallInput} />
+          <input value={form.postal_code} onChange={set("postal_code")} placeholder="Postal code (optional)" className={smallInput} />
+          <input value={form.country} onChange={set("country")} placeholder="Country" className={smallInput} />
+        </div>
+      )}
     </div>
   );
 }
