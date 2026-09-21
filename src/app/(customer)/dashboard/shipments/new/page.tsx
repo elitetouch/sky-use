@@ -17,12 +17,16 @@ export default async function NewShipmentPage({
 }) {
   const { draft: draftId } = await searchParams;
   const token = await getSessionToken();
-  // Addresses are optional now — first-time users can type them inline.
-  const addresses = await apiFetch<Address[]>("/addresses", { token: token! }).catch(() => [] as Address[]);
-
-  const draft = draftId
-    ? await apiFetch<Draft>(`/shipment-drafts/${draftId}`, { token: token! }).catch(() => null)
-    : null;
+  // Fetch addresses and the draft (if resuming) in parallel to keep the page
+  // fast on a cold server. Both are best-effort — a failed call falls back so
+  // the page always renders instead of erroring.
+  const [addresses, draft] = await Promise.all([
+    // Addresses are optional now — first-time users can type them inline.
+    apiFetch<Address[]>("/addresses", { token: token! }).catch(() => [] as Address[]),
+    draftId
+      ? apiFetch<Draft>(`/shipment-drafts/${draftId}`, { token: token! }).catch(() => null)
+      : Promise.resolve(null),
+  ]);
 
   return (
     <div>
