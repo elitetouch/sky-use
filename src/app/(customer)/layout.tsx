@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 import { DashboardShell, type NavItem } from "@/components/layout/DashboardShell";
+import { CustomerTopActions } from "@/components/dashboard/CustomerTopActions";
 import { getCurrentUser, isStaff } from "@/lib/session";
 
 const NAV_ITEMS: NavItem[] = [
@@ -27,6 +28,7 @@ export default async function CustomerLayout({ children }: { children: ReactNode
 
   return (
     <DashboardShell user={user} navItems={NAV_ITEMS}>
+      <CustomerTopActions />
       {children}
     </DashboardShell>
   );

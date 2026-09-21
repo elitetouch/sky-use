@@ -5,10 +5,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { Address } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
-import { SERVICE_OPTIONS, DEFAULT_SERVICE } from "@/lib/services";
 
-type Quote = { price_kobo: number };
 type Item = { description: string; quantity: string; value: string };
+type Parcel = { type: string; length: string; width: string; height: string };
 type AddressForm = {
   label: string;
   contact_name: string;
@@ -22,9 +21,24 @@ type AddressForm = {
   country: string;
 };
 type Mode = "saved" | "new";
+type ServiceRate = {
+  service_level: string;
+  label: string;
+  carrier: string | null;
+  delivery: string;
+  price_kobo: number | null;
+  available: boolean;
+  unavailable_reason: string | null;
+};
 
-const STEPS = ["Route", "Package", "Review"] as const;
+const STEPS = ["Sender", "Receiver", "Items", "Service", "Review"] as const;
+const PURPOSES = ["Personal", "Commercial", "Gift", "Sample", "Return"] as const;
+const CURRENCIES = ["NGN", "USD", "GBP", "EUR"] as const;
+const PARCEL_TYPES = ["Box", "Envelope", "Soft Packaging"] as const;
+const VOLUMETRIC_DIVISOR = 5000;
+
 const EMPTY_ITEM: Item = { description: "", quantity: "1", value: "" };
+const emptyParcel = (): Parcel => ({ type: "Box", length: "", width: "", height: "" });
 const emptyAddress = (country = ""): AddressForm => ({
   label: "",
   contact_name: "",
@@ -43,6 +57,14 @@ const inputClass =
 const smallInput =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy";
 
+function num(v: string): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+function parcelVolumetric(p: Parcel): number {
+  const v = (num(p.length) * num(p.width) * num(p.height)) / VOLUMETRIC_DIVISOR;
+  return Math.round(v * 100) / 100;
+}
 function fullAddress(a: Address): string {
   return [a.line1, a.line2, [a.city, a.state].filter(Boolean).join(", "), a.country].filter(Boolean).join(", ");
 }
@@ -64,22 +86,30 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
   const [receiverId, setReceiverId] = useState(addresses[1]?.id ?? "");
   const [receiverNew, setReceiverNew] = useState<AddressForm>(emptyAddress(""));
 
-  const [description, setDescription] = useState("");
-  const [weightKg, setWeightKg] = useState("1");
-  const [serviceLevel, setServiceLevel] = useState<string>(DEFAULT_SERVICE);
-  const [mode, setMode] = useState("local");
+  const [purpose, setPurpose] = useState<string>("Personal");
+  const [currency, setCurrency] = useState<string>("NGN");
+  const [parcels, setParcels] = useState<Parcel[]>([emptyParcel()]);
+  const [declaredWeight, setDeclaredWeight] = useState("1");
   const [items, setItems] = useState<Item[]>([{ ...EMPTY_ITEM }]);
 
-  const [quote, setQuote] = useState<Quote | null>(null);
+  const [rates, setRates] = useState<ServiceRate[]>([]);
+  const [selected, setSelected] = useState<ServiceRate | null>(null);
+  const [ratesLoading, setRatesLoading] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
-  const [isQuoting, setIsQuoting] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
 
   const filledItems = items.filter((i) => i.description.trim() !== "");
-  const serviceLabel = SERVICE_OPTIONS.find((s) => s.value === serviceLevel)?.label ?? serviceLevel;
+  const totalVolumetric = Math.round(parcels.reduce((s, p) => s + parcelVolumetric(p), 0) * 100) / 100;
+  const declared = num(declaredWeight);
+  const billable = Math.max(declared, totalVolumetric);
+  const volumetricDrives = totalVolumetric > declared && totalVolumetric > 0;
 
-  function updateItem(index: number, patch: Partial<Item>) {
-    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)));
+  function receiverCountry(): string {
+    return receiverMode === "saved" ? addresses.find((a) => a.id === receiverId)?.country ?? "" : receiverNew.country;
+  }
+  function receiverMode2(): string {
+    return receiverCountry().trim().toLowerCase() === "nigeria" ? "local" : "international";
   }
 
   function addressValid(m: Mode, id: string, form: AddressForm): boolean {
@@ -93,13 +123,13 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
     );
   }
 
-  function next() {
+  async function next() {
     setError(null);
-    if (step === 0) {
-      if (!addressValid(senderMode, senderId, senderNew)) {
-        setError("Complete the sender address (name, phone, address, city, state).");
-        return;
-      }
+    if (step === 0 && !addressValid(senderMode, senderId, senderNew)) {
+      setError("Complete the sender address (name, phone, address, city, state).");
+      return;
+    }
+    if (step === 1) {
       if (!addressValid(receiverMode, receiverId, receiverNew)) {
         setError("Complete the receiver address (name, phone, address, city, state).");
         return;
@@ -109,12 +139,16 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
         return;
       }
     }
-    if (step === 1) {
-      if (!weightKg || Number(weightKg) <= 0) {
-        setError("Enter the package weight.");
+    if (step === 2) {
+      if (billable <= 0) {
+        setError("Enter a declared weight, or parcel dimensions for volumetric weight.");
         return;
       }
-      void fetchQuote();
+      await loadRates();
+    }
+    if (step === 3 && !selected) {
+      setError("Choose a service to continue.");
+      return;
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
@@ -122,6 +156,31 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
   function back() {
     setError(null);
     setStep((s) => Math.max(s - 1, 0));
+  }
+
+  async function loadRates() {
+    setRatesLoading(true);
+    setRates([]);
+    setSelected(null);
+    try {
+      const response = await fetch("/api/quotes/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          weight_kg: billable,
+          destination_country: receiverCountry(),
+          mode: receiverMode2(),
+        }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json.message ?? "Couldn't load service prices.");
+        return;
+      }
+      setRates(json.data ?? []);
+    } finally {
+      setRatesLoading(false);
+    }
   }
 
   function addressPayload(m: Mode, id: string, form: AddressForm) {
@@ -143,39 +202,8 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
     };
   }
 
-  function destinationCountry(): string {
-    if (receiverMode === "saved") {
-      return addresses.find((a) => a.id === receiverId)?.country ?? "";
-    }
-    return receiverNew.country;
-  }
-
-  async function fetchQuote() {
-    setIsQuoting(true);
-    setQuote(null);
-    try {
-      const response = await fetch("/api/quotes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          weight_kg: Number(weightKg),
-          service_level: serviceLevel,
-          mode,
-          destination_country: destinationCountry() || undefined,
-        }),
-      });
-      const json = await response.json();
-      if (!response.ok) {
-        setError("Pricing isn't available for this service and route yet. Please choose another service.");
-        return;
-      }
-      setQuote(json.data);
-    } finally {
-      setIsQuoting(false);
-    }
-  }
-
   async function confirmBooking() {
+    if (!selected) return;
     setError(null);
     setIsBooking(true);
     try {
@@ -189,10 +217,18 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
           sender_address: sender.address,
           receiver_address_id: receiver.address_id,
           receiver_address: receiver.address,
-          weight_kg: Number(weightKg),
-          service_level: serviceLevel,
-          mode,
-          description: description || undefined,
+          weight_kg: billable,
+          service_level: selected.service_level,
+          mode: receiverMode2(),
+          purpose,
+          currency,
+          parcels: parcels.map((p) => ({
+            type: p.type,
+            length_cm: num(p.length) || undefined,
+            width_cm: num(p.width) || undefined,
+            height_cm: num(p.height) || undefined,
+            volumetric_kg: parcelVolumetric(p),
+          })),
           items: filledItems.map((it) => {
             const qty = Number(it.quantity);
             const label = qty > 1 ? `${it.description.trim()} ×${qty}` : it.description.trim();
@@ -213,20 +249,19 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
     }
   }
 
-  const routeSummary = (m: Mode, id: string, form: AddressForm) => {
-    if (m === "saved") {
-      const a = addresses.find((x) => x.id === id);
-      return a ? { name: a.contact_name, addr: fullAddress(a) } : { name: "—", addr: "" };
-    }
-    return { name: form.contact_name, addr: newAddressSummary(form) };
-  };
-  const senderSummary = routeSummary(senderMode, senderId, senderNew);
-  const receiverSummary = routeSummary(receiverMode, receiverId, receiverNew);
+  const senderSummary =
+    senderMode === "saved"
+      ? { name: addresses.find((a) => a.id === senderId)?.contact_name ?? "—", addr: fullAddress(addresses.find((a) => a.id === senderId) ?? ({} as Address)) }
+      : { name: senderNew.contact_name, addr: newAddressSummary(senderNew) };
+  const receiverSummary =
+    receiverMode === "saved"
+      ? { name: addresses.find((a) => a.id === receiverId)?.contact_name ?? "—", addr: fullAddress(addresses.find((a) => a.id === receiverId) ?? ({} as Address)) }
+      : { name: receiverNew.contact_name, addr: newAddressSummary(receiverNew) };
 
   return (
     <div className="space-y-6">
       {/* Stepper */}
-      <ol className="flex items-center gap-2">
+      <ol className="flex items-center gap-1 overflow-x-auto">
         {STEPS.map((label, i) => (
           <li key={label} className="flex flex-1 items-center gap-2">
             <span
@@ -236,125 +271,108 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
             >
               {i + 1}
             </span>
-            <span className={`text-sm font-semibold ${i <= step ? "text-navy" : "text-body"}`}>{label}</span>
-            {i < STEPS.length - 1 ? (
-              <span className={`h-0.5 flex-1 ${i < step ? "bg-navy" : "bg-black/10"}`} />
-            ) : null}
+            <span className={`whitespace-nowrap text-sm font-semibold ${i <= step ? "text-navy" : "text-body"}`}>{label}</span>
+            {i < STEPS.length - 1 ? <span className={`h-0.5 flex-1 ${i < step ? "bg-navy" : "bg-black/10"}`} /> : null}
           </li>
         ))}
       </ol>
 
       <div className="rounded-2xl border border-black/5 p-6">
         {step === 0 ? (
-          <div className="space-y-6">
-            <AddressSection
-              title="Ship from"
-              addresses={addresses}
-              mode={senderMode}
-              setMode={setSenderMode}
-              selectedId={senderId}
-              setSelectedId={setSenderId}
-              form={senderNew}
-              setForm={setSenderNew}
-            />
-            <AddressSection
-              title="Ship to"
-              addresses={addresses}
-              mode={receiverMode}
-              setMode={setReceiverMode}
-              selectedId={receiverId}
-              setSelectedId={setReceiverId}
-              form={receiverNew}
-              setForm={setReceiverNew}
-            />
-          </div>
+          <AddressSection title="Ship from" addresses={addresses} mode={senderMode} setMode={setSenderMode} selectedId={senderId} setSelectedId={setSenderId} form={senderNew} setForm={setSenderNew} />
         ) : null}
 
         {step === 1 ? (
-          <div className="space-y-5">
-            <div>
-              <label className="block text-sm font-semibold text-navy">Package description (optional)</label>
-              <input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="e.g. Documents, electronics…"
-                className={inputClass}
-              />
-            </div>
+          <AddressSection title="Ship to" addresses={addresses} mode={receiverMode} setMode={setReceiverMode} selectedId={receiverId} setSelectedId={setReceiverId} form={receiverNew} setForm={setReceiverNew} />
+        ) : null}
 
-            <div className="grid grid-cols-3 gap-4">
+        {step === 2 ? (
+          <div className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-semibold text-navy">Weight (kg)</label>
-                <input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-navy">Service</label>
-                <select value={serviceLevel} onChange={(e) => setServiceLevel(e.target.value)} className={inputClass}>
-                  {SERVICE_OPTIONS.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
+                <label className="block text-sm font-semibold text-navy">Purpose of shipping</label>
+                <select value={purpose} onChange={(e) => setPurpose(e.target.value)} className={inputClass}>
+                  {PURPOSES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-navy">Mode</label>
-                <select value={mode} onChange={(e) => setMode(e.target.value)} className={inputClass}>
-                  <option value="local">Local</option>
-                  <option value="international">International</option>
+                <label className="block text-sm font-semibold text-navy">Currency</label>
+                <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={inputClass}>
+                  {CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
+            {/* Parcels */}
+            <div className="space-y-3">
+              {parcels.map((p, i) => (
+                <div key={i} className="rounded-xl border border-black/10 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-navy">Parcel {i + 1}</p>
+                    <div className="flex items-center gap-3">
+                      <span className="rounded-md bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                        Volumetric = {parcelVolumetric(p)}kg
+                      </span>
+                      {parcels.length > 1 ? (
+                        <button type="button" onClick={() => setParcels((prev) => prev.filter((_, idx) => idx !== i))} className="text-red hover:text-red/70" aria-label="Remove parcel">
+                          ✕
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <select value={p.type} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, type: e.target.value } : x)))} className={smallInput}>
+                      {PARCEL_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    <input type="number" min="0" value={p.length} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, length: e.target.value } : x)))} placeholder="Length (cm)" className={smallInput} />
+                    <input type="number" min="0" value={p.width} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, width: e.target.value } : x)))} placeholder="Width (cm)" className={smallInput} />
+                    <input type="number" min="0" value={p.height} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, height: e.target.value } : x)))} placeholder="Height (cm)" className={smallInput} />
+                  </div>
+                </div>
+              ))}
+              <button type="button" onClick={() => setParcels((prev) => [...prev, emptyParcel()])} className="text-sm font-semibold text-navy hover:text-red">
+                + Add parcel
+              </button>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-semibold text-navy">Declared weight (kg)</label>
+                <input type="number" min="0.1" step="0.1" value={declaredWeight} onChange={(e) => setDeclaredWeight(e.target.value)} className={inputClass} />
+                <p className="mt-1 text-xs text-body">
+                  Billable weight: <strong>{billable}kg</strong>
+                  {volumetricDrives ? " (volumetric applies)" : ""}
+                </p>
+              </div>
+            </div>
+
+            {/* Items */}
             <div>
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-navy">What&apos;s inside? (optional)</label>
-                <button
-                  type="button"
-                  onClick={() => setItems((p) => [...p, { ...EMPTY_ITEM }])}
-                  className="text-xs font-semibold text-navy hover:text-red"
-                >
+                <button type="button" onClick={() => setItems((p) => [...p, { ...EMPTY_ITEM }])} className="text-xs font-semibold text-navy hover:text-red">
                   + Add item
                 </button>
               </div>
               <div className="mt-2 space-y-2">
                 {items.map((item, i) => (
                   <div key={i} className="grid grid-cols-12 gap-2">
-                    <input
-                      value={item.description}
-                      onChange={(e) => updateItem(i, { description: e.target.value })}
-                      placeholder="Item (e.g. Shoes)"
-                      className={`col-span-6 ${smallInput}`}
-                    />
-                    <input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => updateItem(i, { quantity: e.target.value })}
-                      placeholder="Qty"
-                      className={`col-span-2 ${smallInput}`}
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      value={item.value}
-                      onChange={(e) => updateItem(i, { value: e.target.value })}
-                      placeholder="Value ₦"
-                      className={`col-span-3 ${smallInput}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setItems((p) => (p.length === 1 ? p : p.filter((_, idx) => idx !== i)))}
-                      className="col-span-1 text-red hover:text-red/70"
-                      aria-label="Remove item"
-                    >
+                    <input value={item.description} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, description: e.target.value } : x)))} placeholder="Item (e.g. Shoes)" className={`col-span-6 ${smallInput}`} />
+                    <input type="number" min="1" value={item.quantity} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, quantity: e.target.value } : x)))} placeholder="Qty" className={`col-span-2 ${smallInput}`} />
+                    <input type="number" min="0" value={item.value} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))} placeholder={`Value ${currency}`} className={`col-span-3 ${smallInput}`} />
+                    <button type="button" onClick={() => setItems((p) => (p.length === 1 ? p : p.filter((_, idx) => idx !== i)))} className="col-span-1 text-red hover:text-red/70" aria-label="Remove item">
                       ✕
                     </button>
                   </div>
@@ -364,8 +382,52 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
           </div>
         ) : null}
 
-        {step === 2 ? (
-          <div className="space-y-5">
+        {step === 3 ? (
+          <div className="space-y-3">
+            {volumetricDrives ? (
+              <div className="rounded-xl bg-green-50 p-3 text-sm text-green-800">
+                Rates are based on your volumetric weight ({totalVolumetric}kg), as it exceeds your declared weight ({declared}kg).
+              </div>
+            ) : null}
+            {ratesLoading ? (
+              <p className="text-sm text-body">Fetching prices…</p>
+            ) : (
+              rates.map((r) => (
+                <button
+                  key={r.service_level}
+                  type="button"
+                  disabled={!r.available}
+                  onClick={() => setSelected(r)}
+                  className={`flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors ${
+                    !r.available
+                      ? "cursor-not-allowed border-black/5 bg-black/[0.02] opacity-70"
+                      : selected?.service_level === r.service_level
+                        ? "border-navy bg-navy/[0.04]"
+                        : "border-black/10 hover:border-navy/40"
+                  }`}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-navy">{r.label}</p>
+                    <p className="text-xs text-body">{r.available ? `Delivery: ${r.delivery}` : r.unavailable_reason ?? "Not available for this route"}</p>
+                  </div>
+                  <div className="text-right">
+                    {r.available && r.price_kobo !== null ? (
+                      <span className="text-base font-extrabold text-navy">{formatNaira(r.price_kobo)}</span>
+                    ) : (
+                      <span className="text-xs font-semibold text-body">Unavailable</span>
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
+            {!ratesLoading && rates.length > 0 && rates.every((r) => !r.available) ? (
+              <p className="text-sm text-red">No services are available for this route yet.</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {step === 4 ? (
+          <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl border border-black/5 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-body">Ship from</p>
@@ -380,43 +442,31 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
             </div>
 
             <div className="rounded-xl border border-black/5 p-4 text-sm">
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-body">Weight</p>
-                  <p className="font-semibold text-navy">{weightKg} kg</p>
-                </div>
-                <div>
-                  <p className="text-body">Service</p>
-                  <p className="font-semibold text-navy">{serviceLabel}</p>
-                </div>
-                <div>
-                  <p className="text-body">Mode</p>
-                  <p className="font-semibold capitalize text-navy">{mode}</p>
-                </div>
-              </div>
-              {filledItems.length > 0 ? (
-                <ul className="mt-3 divide-y divide-black/5">
-                  {filledItems.map((it, i) => (
-                    <li key={i} className="flex justify-between py-1.5">
-                      <span className="text-navy">
-                        {it.description}
-                        {Number(it.quantity) > 1 ? ` ×${Number(it.quantity)}` : ""}
-                      </span>
-                      <span className="text-body">
-                        {Number(it.value) > 0 ? formatNaira(Math.round(Number(it.value) * 100)) : "—"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-
-            <div className="rounded-2xl bg-navy p-6 text-white">
-              <p className="text-sm text-white/70">Total price</p>
-              <p className="mt-1 text-4xl font-extrabold">
-                {isQuoting ? "…" : quote ? formatNaira(quote.price_kobo) : "—"}
+              <p className="text-body">
+                Purpose: <span className="text-navy">{purpose}</span> · Billable weight:{" "}
+                <span className="text-navy">{billable}kg</span> · Currency: <span className="text-navy">{currency}</span>
+              </p>
+              <p className="mt-1 text-body">
+                {parcels.length} parcel{parcels.length > 1 ? "s" : ""}
+                {filledItems.length > 0 ? ` · ${filledItems.length} item${filledItems.length > 1 ? "s" : ""}` : ""}
               </p>
             </div>
+
+            {selected ? (
+              <div className="rounded-2xl bg-navy p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-white/70">Service</p>
+                    <p className="text-lg font-bold">{selected.label}</p>
+                    <p className="text-xs text-white/70">Delivery: {selected.delivery}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-white/70">Total price</p>
+                    <p className="text-3xl font-extrabold">{selected.price_kobo !== null ? formatNaira(selected.price_kobo) : "—"}</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -431,11 +481,11 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
             <span />
           )}
           {step < STEPS.length - 1 ? (
-            <Button type="button" variant="primary" onClick={next}>
+            <Button type="button" variant="primary" onClick={next} disabled={ratesLoading}>
               Continue
             </Button>
           ) : (
-            <Button type="button" variant="accent" onClick={confirmBooking} disabled={isBooking || isQuoting || !quote}>
+            <Button type="button" variant="accent" onClick={confirmBooking} disabled={isBooking || !selected}>
               {isBooking ? "Booking…" : "Confirm & Book"}
             </Button>
           )}
@@ -474,18 +524,10 @@ function AddressSection({
         <p className="text-sm font-semibold text-navy">{title}</p>
         {hasSaved ? (
           <div className="flex gap-1 rounded-lg bg-black/5 p-0.5 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setMode("saved")}
-              className={`rounded-md px-3 py-1 ${mode === "saved" ? "bg-white text-navy shadow-sm" : "text-body"}`}
-            >
+            <button type="button" onClick={() => setMode("saved")} className={`rounded-md px-3 py-1 ${mode === "saved" ? "bg-white text-navy shadow-sm" : "text-body"}`}>
               Saved
             </button>
-            <button
-              type="button"
-              onClick={() => setMode("new")}
-              className={`rounded-md px-3 py-1 ${mode === "new" ? "bg-white text-navy shadow-sm" : "text-body"}`}
-            >
+            <button type="button" onClick={() => setMode("new")} className={`rounded-md px-3 py-1 ${mode === "new" ? "bg-white text-navy shadow-sm" : "text-body"}`}>
               New address
             </button>
           </div>
@@ -497,14 +539,7 @@ function AddressSection({
           {addresses.map((a) => {
             const selected = a.id === selectedId;
             return (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => setSelectedId(a.id)}
-                className={`rounded-xl border p-3 text-left transition-colors ${
-                  selected ? "border-navy bg-navy/[0.04]" : "border-black/10 hover:border-navy/40"
-                }`}
-              >
+              <button key={a.id} type="button" onClick={() => setSelectedId(a.id)} className={`rounded-xl border p-3 text-left transition-colors ${selected ? "border-navy bg-navy/[0.04]" : "border-black/10 hover:border-navy/40"}`}>
                 <p className="text-sm font-semibold text-navy">
                   {a.label ? `${a.label} — ` : ""}
                   {a.contact_name}
