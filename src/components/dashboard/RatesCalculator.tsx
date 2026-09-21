@@ -105,12 +105,12 @@ export function RatesCalculator() {
             <div key={r.service_level} className={`flex items-center justify-between rounded-xl border p-4 ${r.available ? "border-black/10" : "border-black/5 bg-black/[0.02]"}`}>
               <div>
                 <p className="text-sm font-semibold text-navy">{r.label}</p>
-                <p className="text-xs text-body">{r.available ? `Delivery: ${r.delivery}` : r.unavailable_reason ?? "Not available"}</p>
+                <p className="text-xs text-body">Delivery: {r.delivery}</p>
               </div>
               {r.available && r.price_kobo !== null ? (
                 <span className="text-base font-extrabold text-navy">{formatNaira(r.price_kobo)}</span>
               ) : (
-                <span className="text-xs font-semibold text-body">Unavailable</span>
+                <span className="text-xs font-semibold text-body">Price not available</span>
               )}
             </div>
           ))}

@@ -408,20 +408,20 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
                 >
                   <div>
                     <p className="text-sm font-semibold text-navy">{r.label}</p>
-                    <p className="text-xs text-body">{r.available ? `Delivery: ${r.delivery}` : r.unavailable_reason ?? "Not available for this route"}</p>
+                    <p className="text-xs text-body">Delivery: {r.delivery}</p>
                   </div>
                   <div className="text-right">
                     {r.available && r.price_kobo !== null ? (
                       <span className="text-base font-extrabold text-navy">{formatNaira(r.price_kobo)}</span>
                     ) : (
-                      <span className="text-xs font-semibold text-body">Unavailable</span>
+                      <span className="text-xs font-semibold text-body">Price not available</span>
                     )}
                   </div>
                 </button>
               ))
             )}
             {!ratesLoading && rates.length > 0 && rates.every((r) => !r.available) ? (
-              <p className="text-sm text-red">No services are available for this route yet.</p>
+              <p className="text-sm text-body">Prices aren&apos;t available for this route yet — please contact us for a quote.</p>
             ) : null}
           </div>
         ) : null}
