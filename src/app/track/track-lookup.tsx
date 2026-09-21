@@ -23,6 +23,7 @@ type Shipment = {
   origin: string | null;
   destination: string | null;
   is_delivered: boolean;
+  payment_pending?: boolean;
   estimated_delivery_date: string | null;
   estimated_delivery_window: string | null;
   status_events: StatusEvent[];
@@ -96,10 +97,20 @@ export function TrackLookup() {
               </p>
               <p className="text-lg font-bold text-navy">{shipment.tracking_number}</p>
             </div>
-            <span className="rounded-full bg-navy px-4 py-1.5 text-sm font-semibold text-white">
-              {shipment.status_label}
+            <span
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
+                shipment.payment_pending ? "bg-amber-100 text-amber-800" : "bg-navy text-white"
+              }`}
+            >
+              {shipment.payment_pending ? "Awaiting Payment" : shipment.status_label}
             </span>
           </div>
+
+          {shipment.payment_pending ? (
+            <div className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
+              This shipment hasn&apos;t been paid for yet. Processing begins once payment is completed.
+            </div>
+          ) : null}
 
           {shipment.origin || shipment.destination ? (
             <div className="mt-6 flex items-center gap-3">
