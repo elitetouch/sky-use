@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const actions = [
   { href: "/dashboard/shipments/new", label: "Book Shipment", primary: true },
-  { href: "/track", label: "Track Shipment", primary: false },
+  { href: "/dashboard/track", label: "Track Shipment", primary: false },
   { href: "/dashboard/rates", label: "Rates Calculator", primary: false },
 ];
 
