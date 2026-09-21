@@ -72,25 +72,33 @@ function newAddressSummary(a: AddressForm): string {
   return [a.line1, a.line2, [a.city, a.state].filter(Boolean).join(", "), a.country].filter(Boolean).join(", ");
 }
 
-export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
+export function BookShipmentForm({
+  addresses,
+  initialDraft,
+}: {
+  addresses: Address[];
+  initialDraft?: { id: string; data: Record<string, unknown> } | null;
+}) {
   const router = useRouter();
   const hasSaved = addresses.length > 0;
+  const d = (initialDraft?.data ?? {}) as Record<string, unknown>;
 
+  const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
   const [step, setStep] = useState(0);
 
-  const [senderMode, setSenderMode] = useState<Mode>(hasSaved ? "saved" : "new");
-  const [senderId, setSenderId] = useState(addresses[0]?.id ?? "");
-  const [senderNew, setSenderNew] = useState<AddressForm>(emptyAddress("Nigeria"));
+  const [senderMode, setSenderMode] = useState<Mode>((d.senderMode as Mode) ?? (hasSaved ? "saved" : "new"));
+  const [senderId, setSenderId] = useState((d.senderId as string) ?? addresses[0]?.id ?? "");
+  const [senderNew, setSenderNew] = useState<AddressForm>((d.senderNew as AddressForm) ?? emptyAddress("Nigeria"));
 
-  const [receiverMode, setReceiverMode] = useState<Mode>(hasSaved ? "saved" : "new");
-  const [receiverId, setReceiverId] = useState(addresses[1]?.id ?? "");
-  const [receiverNew, setReceiverNew] = useState<AddressForm>(emptyAddress(""));
+  const [receiverMode, setReceiverMode] = useState<Mode>((d.receiverMode as Mode) ?? (hasSaved ? "saved" : "new"));
+  const [receiverId, setReceiverId] = useState((d.receiverId as string) ?? addresses[1]?.id ?? "");
+  const [receiverNew, setReceiverNew] = useState<AddressForm>((d.receiverNew as AddressForm) ?? emptyAddress(""));
 
-  const [purpose, setPurpose] = useState<string>("Personal");
-  const [currency, setCurrency] = useState<string>("NGN");
-  const [parcels, setParcels] = useState<Parcel[]>([emptyParcel()]);
-  const [declaredWeight, setDeclaredWeight] = useState("1");
-  const [items, setItems] = useState<Item[]>([{ ...EMPTY_ITEM }]);
+  const [purpose, setPurpose] = useState<string>((d.purpose as string) ?? "Personal");
+  const [currency, setCurrency] = useState<string>((d.currency as string) ?? "NGN");
+  const [parcels, setParcels] = useState<Parcel[]>((d.parcels as Parcel[]) ?? [emptyParcel()]);
+  const [declaredWeight, setDeclaredWeight] = useState((d.declaredWeight as string) ?? "1");
+  const [items, setItems] = useState<Item[]>((d.items as Item[]) ?? [{ ...EMPTY_ITEM }]);
 
   const [rates, setRates] = useState<ServiceRate[]>([]);
   const [selected, setSelected] = useState<ServiceRate | null>(null);
@@ -98,6 +106,8 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
 
   const [error, setError] = useState<string | null>(null);
   const [isBooking, setIsBooking] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftMsg, setDraftMsg] = useState<string | null>(null);
 
   const filledItems = items.filter((i) => i.description.trim() !== "");
   const totalVolumetric = Math.round(parcels.reduce((s, p) => s + parcelVolumetric(p), 0) * 100) / 100;
@@ -202,6 +212,45 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
     };
   }
 
+  function draftData() {
+    return {
+      senderMode,
+      senderId,
+      senderNew,
+      receiverMode,
+      receiverId,
+      receiverNew,
+      purpose,
+      currency,
+      parcels,
+      declaredWeight,
+      items,
+    };
+  }
+
+  async function saveDraft() {
+    setDraftMsg(null);
+    setError(null);
+    setSavingDraft(true);
+    try {
+      const summary = `To ${receiverSummary.name || "recipient"}${receiverCountry() ? ` — ${receiverCountry()}` : ""}`;
+      const response = await fetch("/api/shipment-drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: draftId ?? undefined, summary, data: draftData() }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json.message ?? "Couldn't save draft.");
+        return;
+      }
+      if (json.data?.id) setDraftId(json.data.id);
+      setDraftMsg("Draft saved. You can resume it from My Shipments.");
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
   async function confirmBooking() {
     if (!selected) return;
     setError(null);
@@ -241,6 +290,10 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
       if (!response.ok) {
         setError(json.message ?? "Unable to book this shipment.");
         return;
+      }
+      // The draft has become a real shipment — discard it.
+      if (draftId) {
+        await fetch(`/api/shipment-drafts/${draftId}`, { method: "DELETE" }).catch(() => {});
       }
       router.push(`/dashboard/shipments/${json.data.id}`);
       router.refresh();
@@ -471,6 +524,7 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
         ) : null}
 
         {error ? <p className="mt-4 text-sm text-red">{error}</p> : null}
+        {draftMsg ? <p className="mt-4 text-sm text-green-700">{draftMsg}</p> : null}
 
         <div className="mt-6 flex items-center justify-between gap-3">
           {step > 0 ? (
@@ -480,15 +534,25 @@ export function BookShipmentForm({ addresses }: { addresses: Address[] }) {
           ) : (
             <span />
           )}
-          {step < STEPS.length - 1 ? (
-            <Button type="button" variant="primary" onClick={next} disabled={ratesLoading}>
-              Continue
-            </Button>
-          ) : (
-            <Button type="button" variant="accent" onClick={confirmBooking} disabled={isBooking || !selected}>
-              {isBooking ? "Booking…" : "Confirm & Book"}
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={saveDraft}
+              disabled={savingDraft || isBooking}
+              className="text-sm font-semibold text-navy hover:text-red disabled:opacity-50"
+            >
+              {savingDraft ? "Saving…" : "Save as draft"}
+            </button>
+            {step < STEPS.length - 1 ? (
+              <Button type="button" variant="primary" onClick={next} disabled={ratesLoading}>
+                Continue
+              </Button>
+            ) : (
+              <Button type="button" variant="accent" onClick={confirmBooking} disabled={isBooking || !selected}>
+                {isBooking ? "Booking…" : "Confirm & Book"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

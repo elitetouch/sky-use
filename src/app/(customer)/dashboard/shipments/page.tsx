@@ -6,14 +6,18 @@ import { getSessionToken } from "@/lib/session";
 import type { PaginatedResult, Shipment } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { LinkButton } from "@/components/ui/Button";
+import { DraftsList } from "@/components/dashboard/DraftsList";
 
 export const metadata: Metadata = {
   title: "My Shipments",
 };
 
+type Draft = { id: string; summary: string | null; updated_at: string };
+
 export default async function ShipmentsPage() {
   const token = await getSessionToken();
   const { items: shipments } = await apiFetch<PaginatedResult<Shipment>>("/shipments", { token: token! });
+  const drafts = await apiFetch<Draft[]>("/shipment-drafts", { token: token! }).catch(() => [] as Draft[]);
 
   return (
     <div>
@@ -26,6 +30,8 @@ export default async function ShipmentsPage() {
           + Book a Shipment
         </LinkButton>
       </div>
+
+      <DraftsList drafts={drafts} />
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-black/5">
         {shipments.length === 0 ? (
