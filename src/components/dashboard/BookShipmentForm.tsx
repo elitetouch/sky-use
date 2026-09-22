@@ -52,6 +52,56 @@ const emptyAddress = (country = ""): AddressForm => ({
   country,
 });
 
+// --- Draft hydration guards ---------------------------------------------
+// Draft `data` is arbitrary JSON persisted from an earlier session. Never
+// trust its shape: a non-string where a string is expected (e.g. an item
+// with no `description`) or a non-array `parcels`/`items` would crash the
+// form during render. These coercers guarantee well-typed state so a
+// malformed or older-schema draft resumes cleanly instead of erroring.
+function asRecord(v: unknown): Record<string, unknown> {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+}
+function asStr(v: unknown, fallback = ""): string {
+  if (typeof v === "string") return v;
+  if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  return fallback;
+}
+function asMode(v: unknown, fallback: Mode): Mode {
+  return v === "saved" || v === "new" ? v : fallback;
+}
+function asItems(v: unknown): Item[] {
+  if (!Array.isArray(v)) return [{ ...EMPTY_ITEM }];
+  const items = v.map((x) => {
+    const r = asRecord(x);
+    return { description: asStr(r.description), quantity: asStr(r.quantity, "1"), value: asStr(r.value) };
+  });
+  return items.length > 0 ? items : [{ ...EMPTY_ITEM }];
+}
+function asParcels(v: unknown): Parcel[] {
+  if (!Array.isArray(v)) return [emptyParcel()];
+  const parcels = v.map((x) => {
+    const r = asRecord(x);
+    return { type: asStr(r.type, "Box") || "Box", length: asStr(r.length), width: asStr(r.width), height: asStr(r.height) };
+  });
+  return parcels.length > 0 ? parcels : [emptyParcel()];
+}
+function asAddress(v: unknown, country: string): AddressForm {
+  const r = asRecord(v);
+  if (Object.keys(r).length === 0) return emptyAddress(country);
+  return {
+    label: asStr(r.label),
+    contact_name: asStr(r.contact_name),
+    phone: asStr(r.phone),
+    email: asStr(r.email),
+    line1: asStr(r.line1),
+    line2: asStr(r.line2),
+    city: asStr(r.city),
+    state: asStr(r.state),
+    postal_code: asStr(r.postal_code),
+    country: asStr(r.country, country),
+  };
+}
+
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
 const smallInput =
@@ -81,24 +131,24 @@ export function BookShipmentForm({
 }) {
   const router = useRouter();
   const hasSaved = addresses.length > 0;
-  const d = (initialDraft?.data ?? {}) as Record<string, unknown>;
+  const d = asRecord(initialDraft?.data);
 
   const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
   const [step, setStep] = useState(0);
 
-  const [senderMode, setSenderMode] = useState<Mode>((d.senderMode as Mode) ?? (hasSaved ? "saved" : "new"));
-  const [senderId, setSenderId] = useState((d.senderId as string) ?? addresses[0]?.id ?? "");
-  const [senderNew, setSenderNew] = useState<AddressForm>((d.senderNew as AddressForm) ?? emptyAddress("Nigeria"));
+  const [senderMode, setSenderMode] = useState<Mode>(asMode(d.senderMode, hasSaved ? "saved" : "new"));
+  const [senderId, setSenderId] = useState(asStr(d.senderId) || addresses[0]?.id || "");
+  const [senderNew, setSenderNew] = useState<AddressForm>(asAddress(d.senderNew, "Nigeria"));
 
-  const [receiverMode, setReceiverMode] = useState<Mode>((d.receiverMode as Mode) ?? (hasSaved ? "saved" : "new"));
-  const [receiverId, setReceiverId] = useState((d.receiverId as string) ?? addresses[1]?.id ?? "");
-  const [receiverNew, setReceiverNew] = useState<AddressForm>((d.receiverNew as AddressForm) ?? emptyAddress(""));
+  const [receiverMode, setReceiverMode] = useState<Mode>(asMode(d.receiverMode, hasSaved ? "saved" : "new"));
+  const [receiverId, setReceiverId] = useState(asStr(d.receiverId) || addresses[1]?.id || "");
+  const [receiverNew, setReceiverNew] = useState<AddressForm>(asAddress(d.receiverNew, ""));
 
-  const [purpose, setPurpose] = useState<string>((d.purpose as string) ?? "Personal");
-  const [currency, setCurrency] = useState<string>((d.currency as string) ?? "NGN");
-  const [parcels, setParcels] = useState<Parcel[]>((d.parcels as Parcel[]) ?? [emptyParcel()]);
-  const [declaredWeight, setDeclaredWeight] = useState((d.declaredWeight as string) ?? "1");
-  const [items, setItems] = useState<Item[]>((d.items as Item[]) ?? [{ ...EMPTY_ITEM }]);
+  const [purpose, setPurpose] = useState<string>(asStr(d.purpose, "Personal"));
+  const [currency, setCurrency] = useState<string>(asStr(d.currency, "NGN"));
+  const [parcels, setParcels] = useState<Parcel[]>(asParcels(d.parcels));
+  const [declaredWeight, setDeclaredWeight] = useState(asStr(d.declaredWeight, "1"));
+  const [items, setItems] = useState<Item[]>(asItems(d.items));
 
   const [rates, setRates] = useState<ServiceRate[]>([]);
   const [selected, setSelected] = useState<ServiceRate | null>(null);
