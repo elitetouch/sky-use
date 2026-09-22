@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { OtpInput } from "@/components/ui/OtpInput";
 
 type Challenge = { token: string; method: "totp" | "email" };
 
@@ -19,6 +20,7 @@ export function LoginForm() {
   // Second step, only when the account has 2FA enabled.
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [code, setCode] = useState("");
+  const [useRecovery, setUseRecovery] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
 
   function done() {
@@ -95,30 +97,37 @@ export function LoginForm() {
   const justReset = searchParams.get("reset") === "1";
 
   if (challenge) {
+    const showRecovery = challenge.method === "totp" && useRecovery;
     return (
-      <form onSubmit={handleChallenge} className="space-y-4">
-        <p className="text-sm text-body">
+      <form onSubmit={handleChallenge} className="space-y-5">
+        <p className="text-center text-sm text-body">
           {challenge.method === "email"
             ? "We emailed you a 6-digit code. Enter it below to finish signing in."
-            : "Enter the 6-digit code from your authenticator app. You can also use a recovery code."}
+            : showRecovery
+              ? "Enter one of your recovery codes."
+              : "Enter the 6-digit code from your authenticator app."}
         </p>
 
         {error ? <div className="rounded-lg bg-red/10 px-4 py-3 text-sm text-red">{error}</div> : null}
         {resendMsg ? <div className="rounded-lg bg-navy/5 px-4 py-3 text-sm text-navy">{resendMsg}</div> : null}
 
-        <Field
-          label="Verification code"
-          type="text"
-          name="code"
-          inputMode="text"
-          autoComplete="one-time-code"
-          autoFocus
-          required
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-        />
+        {showRecovery ? (
+          <Field
+            label="Recovery code"
+            type="text"
+            name="code"
+            autoComplete="off"
+            autoFocus
+            required
+            placeholder="XXXX-XXXX"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+          />
+        ) : (
+          <OtpInput value={code} onChange={setCode} autoFocus />
+        )}
 
-        <Button type="submit" variant="accent" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" variant="accent" className="w-full" disabled={isSubmitting || code.trim() === ""}>
           {isSubmitting ? "Verifying…" : "Verify & sign in"}
         </Button>
 
@@ -128,13 +137,24 @@ export function LoginForm() {
               Resend code
             </button>
           ) : (
-            <span />
+            <button
+              type="button"
+              onClick={() => {
+                setUseRecovery((v) => !v);
+                setCode("");
+                setError(null);
+              }}
+              className="font-semibold text-navy hover:text-red"
+            >
+              {useRecovery ? "Use authenticator code" : "Use a recovery code"}
+            </button>
           )}
           <button
             type="button"
             onClick={() => {
               setChallenge(null);
               setCode("");
+              setUseRecovery(false);
               setError(null);
               setResendMsg(null);
             }}

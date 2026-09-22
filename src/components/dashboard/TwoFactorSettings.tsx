@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/Button";
+import { OtpInput } from "@/components/ui/OtpInput";
 
 type Method = "totp" | "email" | null;
 type Mode = "idle" | "setup-totp" | "setup-email";
@@ -21,6 +22,7 @@ export function TwoFactorSettings({
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("idle");
   const [busy, setBusy] = useState(false);
+  const [starting, setStarting] = useState<"totp" | "email" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // TOTP setup state
@@ -60,7 +62,7 @@ export function TwoFactorSettings({
   }
 
   async function startTotp() {
-    setBusy(true);
+    setStarting("totp");
     setError(null);
     try {
       const res = await fetch("/api/auth/2fa/totp", { method: "POST" });
@@ -73,7 +75,7 @@ export function TwoFactorSettings({
       setSecret(json.data.secret);
       setMode("setup-totp");
     } finally {
-      setBusy(false);
+      setStarting(null);
     }
   }
 
@@ -100,7 +102,7 @@ export function TwoFactorSettings({
   }
 
   async function startEmail() {
-    setBusy(true);
+    setStarting("email");
     setError(null);
     try {
       const res = await fetch("/api/auth/2fa/email", { method: "POST" });
@@ -112,7 +114,7 @@ export function TwoFactorSettings({
       setEmailSent(true);
       setMode("setup-email");
     } finally {
-      setBusy(false);
+      setStarting(null);
     }
   }
 
@@ -231,10 +233,12 @@ export function TwoFactorSettings({
               {secret}
             </code>
             <label className="mt-4 block text-sm font-semibold text-navy">Enter code</label>
-            <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" placeholder="123456" className={inputClass} />
+            <div className="mt-2">
+              <OtpInput value={code} onChange={setCode} />
+            </div>
             {errorBox}
             <div className="mt-4 flex items-center gap-3">
-              <Button type="button" variant="accent" onClick={confirmTotp} disabled={busy || code.trim() === ""}>
+              <Button type="button" variant="accent" onClick={confirmTotp} disabled={busy || code.trim().length < 6}>
                 {busy ? "Confirming…" : "Confirm & enable"}
               </Button>
               <button type="button" onClick={reset} className="text-sm font-semibold text-body hover:text-navy">
@@ -256,14 +260,16 @@ export function TwoFactorSettings({
           {emailSent ? "We sent a 6-digit code to your email. Enter it below to turn on two-factor." : "Sending a code…"}
         </p>
         <label className="mt-4 block text-sm font-semibold text-navy">Enter code</label>
-        <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" placeholder="123456" className={inputClass} />
+        <div className="mt-2">
+          <OtpInput value={code} onChange={setCode} />
+        </div>
         {errorBox}
         <div className="mt-4 flex items-center gap-3">
-          <Button type="button" variant="accent" onClick={confirmEmail} disabled={busy || code.trim() === ""}>
+          <Button type="button" variant="accent" onClick={confirmEmail} disabled={busy || code.trim().length < 6}>
             {busy ? "Confirming…" : "Confirm & enable"}
           </Button>
-          <button type="button" onClick={startEmail} disabled={busy} className="text-sm font-semibold text-navy hover:text-red">
-            Resend code
+          <button type="button" onClick={startEmail} disabled={starting === "email"} className="text-sm font-semibold text-navy hover:text-red">
+            {starting === "email" ? "Sending…" : "Resend code"}
           </button>
           <button type="button" onClick={reset} className="text-sm font-semibold text-body hover:text-navy">
             Cancel
@@ -330,8 +336,8 @@ export function TwoFactorSettings({
           <p className="mt-1 text-xs text-body">
             Use Google Authenticator, Authy or 1Password. Works offline. Includes recovery codes.
           </p>
-          <Button type="button" variant="primary" className="mt-4" onClick={startTotp} disabled={busy}>
-            {busy ? "Starting…" : "Set up"}
+          <Button type="button" variant="primary" className="mt-4" onClick={startTotp} disabled={starting !== null}>
+            {starting === "totp" ? "Starting…" : "Set up"}
           </Button>
         </div>
         <div className="rounded-xl border border-black/5 p-5">
@@ -339,8 +345,8 @@ export function TwoFactorSettings({
           <p className="mt-1 text-xs text-body">
             We email a fresh code each time you log in. No app needed.
           </p>
-          <Button type="button" variant="primary" className="mt-4" onClick={startEmail} disabled={busy}>
-            {busy ? "Sending…" : "Set up"}
+          <Button type="button" variant="primary" className="mt-4" onClick={startEmail} disabled={starting !== null}>
+            {starting === "email" ? "Sending…" : "Set up"}
           </Button>
         </div>
       </div>
