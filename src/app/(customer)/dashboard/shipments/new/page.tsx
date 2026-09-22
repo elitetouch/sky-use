@@ -35,7 +35,7 @@ export default async function NewShipmentPage({
         {draft ? "Resuming your saved draft — review and complete it." : "Enter your package details to get an instant price."}
       </p>
 
-      <div className="mt-6 max-w-2xl">
+      <div className="mt-6 max-w-4xl">
         <BookShipmentForm addresses={addresses} initialDraft={draft} />
       </div>
     </div>

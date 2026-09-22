@@ -29,6 +29,17 @@
   --font-sans: var(--font-sarabun);
 }
 
+/*
+  Readability: users reported the app text was too small. Since every Tailwind
+  size (fonts, padding, buttons) is rem-based, raising the root font-size scales
+  them all together. `clamp` keeps it fluid and responsive across devices —
+  ~17.5px on phones, growing to a 19px cap on large screens — instead of one
+  fixed size that's oversized on mobile. Respects the user's browser zoom.
+*/
+html {
+  font-size: clamp(17px, 16px + 0.4vw, 19px);
+}
+
 body {
   background: var(--background);
   color: var(--color-body);

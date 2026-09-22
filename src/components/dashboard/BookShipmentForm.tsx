@@ -106,6 +106,8 @@ const inputClass =
   "mt-1.5 w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
 const smallInput =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy";
+const fieldLabel = "mb-1 block text-sm font-medium text-navy";
+const optionalHint = <span className="font-normal text-body"> (optional)</span>;
 
 function num(v: string): number {
   const n = Number(v);
@@ -431,17 +433,29 @@ export function BookShipmentForm({
                       ) : null}
                     </div>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <select value={p.type} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, type: e.target.value } : x)))} className={smallInput}>
-                      {PARCEL_TYPES.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                    <input type="number" min="0" value={p.length} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, length: e.target.value } : x)))} placeholder="Length (cm)" className={smallInput} />
-                    <input type="number" min="0" value={p.width} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, width: e.target.value } : x)))} placeholder="Width (cm)" className={smallInput} />
-                    <input type="number" min="0" value={p.height} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, height: e.target.value } : x)))} placeholder="Height (cm)" className={smallInput} />
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <label className="block">
+                      <span className={fieldLabel}>Packaging</span>
+                      <select value={p.type} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, type: e.target.value } : x)))} className={smallInput}>
+                        {PARCEL_TYPES.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className={fieldLabel}>Length (cm)</span>
+                      <input type="number" min="0" value={p.length} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, length: e.target.value } : x)))} placeholder="0" className={smallInput} />
+                    </label>
+                    <label className="block">
+                      <span className={fieldLabel}>Width (cm)</span>
+                      <input type="number" min="0" value={p.width} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, width: e.target.value } : x)))} placeholder="0" className={smallInput} />
+                    </label>
+                    <label className="block">
+                      <span className={fieldLabel}>Height (cm)</span>
+                      <input type="number" min="0" value={p.height} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, height: e.target.value } : x)))} placeholder="0" className={smallInput} />
+                    </label>
                   </div>
                 </div>
               ))}
@@ -469,12 +483,18 @@ export function BookShipmentForm({
                   + Add item
                 </button>
               </div>
-              <div className="mt-2 space-y-2">
+              <div className="mt-2 grid grid-cols-12 gap-2 px-1">
+                <span className={`col-span-6 ${fieldLabel} mb-0`}>Item</span>
+                <span className={`col-span-2 ${fieldLabel} mb-0`}>Qty</span>
+                <span className={`col-span-3 ${fieldLabel} mb-0`}>Value ({currency})</span>
+                <span className="col-span-1" />
+              </div>
+              <div className="mt-1 space-y-2">
                 {items.map((item, i) => (
-                  <div key={i} className="grid grid-cols-12 gap-2">
-                    <input value={item.description} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, description: e.target.value } : x)))} placeholder="Item (e.g. Shoes)" className={`col-span-6 ${smallInput}`} />
-                    <input type="number" min="1" value={item.quantity} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, quantity: e.target.value } : x)))} placeholder="Qty" className={`col-span-2 ${smallInput}`} />
-                    <input type="number" min="0" value={item.value} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))} placeholder={`Value ${currency}`} className={`col-span-3 ${smallInput}`} />
+                  <div key={i} className="grid grid-cols-12 items-center gap-2">
+                    <input value={item.description} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, description: e.target.value } : x)))} placeholder="e.g. Shoes" className={`col-span-6 ${smallInput}`} />
+                    <input type="number" min="1" value={item.quantity} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, quantity: e.target.value } : x)))} placeholder="1" className={`col-span-2 ${smallInput}`} />
+                    <input type="number" min="0" value={item.value} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))} placeholder="0" className={`col-span-3 ${smallInput}`} />
                     <button type="button" onClick={() => setItems((p) => (p.length === 1 ? p : p.filter((_, idx) => idx !== i)))} className="col-span-1 text-red hover:text-red/70" aria-label="Remove item">
                       ✕
                     </button>
@@ -664,16 +684,43 @@ function AddressSection({
           })}
         </div>
       ) : (
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <input value={form.contact_name} onChange={set("contact_name")} placeholder="Full name" className={smallInput} />
-          <input value={form.phone} onChange={set("phone")} placeholder="Phone" className={smallInput} />
-          <input value={form.email} onChange={set("email")} placeholder="Email (optional)" className={`col-span-2 ${smallInput}`} />
-          <input value={form.line1} onChange={set("line1")} placeholder="Address line 1" className={`col-span-2 ${smallInput}`} />
-          <input value={form.line2} onChange={set("line2")} placeholder="Address line 2 (optional)" className={`col-span-2 ${smallInput}`} />
-          <input value={form.city} onChange={set("city")} placeholder="City" className={smallInput} />
-          <input value={form.state} onChange={set("state")} placeholder="State" className={smallInput} />
-          <input value={form.postal_code} onChange={set("postal_code")} placeholder="Postal code (optional)" className={smallInput} />
-          <input value={form.country} onChange={set("country")} placeholder="Country" className={smallInput} />
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className={fieldLabel}>Full name</span>
+            <input value={form.contact_name} onChange={set("contact_name")} placeholder="e.g. Jane Doe" className={smallInput} />
+          </label>
+          <label className="block">
+            <span className={fieldLabel}>Phone</span>
+            <input value={form.phone} onChange={set("phone")} placeholder="e.g. 0803 000 0000" className={smallInput} />
+          </label>
+          <label className="col-span-2 block">
+            <span className={fieldLabel}>Email{optionalHint}</span>
+            <input type="email" value={form.email} onChange={set("email")} placeholder="name@email.com" className={smallInput} />
+          </label>
+          <label className="col-span-2 block">
+            <span className={fieldLabel}>Address line 1</span>
+            <input value={form.line1} onChange={set("line1")} placeholder="Street address" className={smallInput} />
+          </label>
+          <label className="col-span-2 block">
+            <span className={fieldLabel}>Address line 2{optionalHint}</span>
+            <input value={form.line2} onChange={set("line2")} placeholder="Apartment, suite, unit, etc." className={smallInput} />
+          </label>
+          <label className="block">
+            <span className={fieldLabel}>City</span>
+            <input value={form.city} onChange={set("city")} placeholder="City" className={smallInput} />
+          </label>
+          <label className="block">
+            <span className={fieldLabel}>State / Province</span>
+            <input value={form.state} onChange={set("state")} placeholder="State or province" className={smallInput} />
+          </label>
+          <label className="block">
+            <span className={fieldLabel}>Postal code{optionalHint}</span>
+            <input value={form.postal_code} onChange={set("postal_code")} placeholder="Postal / ZIP code" className={smallInput} />
+          </label>
+          <label className="block">
+            <span className={fieldLabel}>Country</span>
+            <input value={form.country} onChange={set("country")} placeholder="Country" className={smallInput} />
+          </label>
         </div>
       )}
     </div>
