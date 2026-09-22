@@ -27,8 +27,7 @@ export default async function CustomerLayout({ children }: { children: ReactNode
   }
 
   return (
-    <DashboardShell user={user} navItems={NAV_ITEMS}>
-      <CustomerTopActions />
+    <DashboardShell user={user} navItems={NAV_ITEMS} headerActions={<CustomerTopActions />}>
       {children}
     </DashboardShell>
   );

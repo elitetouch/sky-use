@@ -13,10 +13,12 @@ export function DashboardShell({
   user,
   navItems,
   children,
+  headerActions,
 }: {
   user: SessionUser;
   navItems: NavItem[];
   children: ReactNode;
+  headerActions?: ReactNode;
 }) {
   return (
     <div className="flex min-h-screen bg-[#f7f7f8]">
@@ -38,10 +40,11 @@ export function DashboardShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-black/5 bg-white px-6 py-4 print:hidden">
+        <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-black/5 bg-white px-6 py-4 print:hidden">
           <div className="md:hidden">
             <Logo />
           </div>
+          {headerActions ? <div className="order-last w-full md:order-none md:w-auto">{headerActions}</div> : null}
           <div className="ml-auto flex items-center gap-4">
             <div className="text-right">
               <p className="text-sm font-semibold text-navy">{user.name}</p>

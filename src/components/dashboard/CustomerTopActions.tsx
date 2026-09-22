@@ -9,7 +9,7 @@ const actions = [
 /** Terminal-style quick actions shown at the top of every customer page. */
 export function CustomerTopActions() {
   return (
-    <div className="mb-6 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {actions.map((a) => (
         <Link
           key={a.href}
