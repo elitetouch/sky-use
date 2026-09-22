@@ -7,7 +7,17 @@ import type { Address } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 
 type Item = { description: string; quantity: string; value: string };
-type Parcel = { type: string; length: string; width: string; height: string };
+type UploadedFile = { path: string; url: string; name: string };
+type ProofSlot = "parcelItems" | "proofOfPurchase" | "proofOfWeight";
+type Parcel = {
+  type: string;
+  length: string;
+  width: string;
+  height: string;
+  parcelItems?: UploadedFile;
+  proofOfPurchase?: UploadedFile;
+  proofOfWeight?: UploadedFile;
+};
 type AddressForm = {
   label: string;
   contact_name: string;
@@ -36,6 +46,40 @@ const PURPOSES = ["Personal", "Commercial", "Gift", "Sample", "Return"] as const
 const CURRENCIES = ["NGN", "USD", "GBP", "EUR"] as const;
 const PARCEL_TYPES = ["Box", "Envelope", "Soft Packaging"] as const;
 const VOLUMETRIC_DIVISOR = 5000;
+
+const PROOF_SLOTS: { key: ProofSlot; label: string }[] = [
+  { key: "parcelItems", label: "Parcel Items" },
+  { key: "proofOfPurchase", label: "Proof of Purchase" },
+  { key: "proofOfWeight", label: "Proof of Weight" },
+];
+
+// How-to content shown in the "View Sample" popup for each upload slot.
+const PROOF_SAMPLES: Record<ProofSlot, { title: string; steps: string[] }> = {
+  parcelItems: {
+    title: "Parcel Items: How to upload",
+    steps: [
+      "Arrange all the contents of this parcel and take a picture.",
+      "Ensure you capture every single item.",
+      "Upload an image (JPG or PNG) under 1MB.",
+    ],
+  },
+  proofOfPurchase: {
+    title: "Proof of Purchase: How to upload",
+    steps: [
+      "Take a picture of the receipts associated with these items.",
+      "Upload an image (JPG or PNG) under 1MB.",
+    ],
+  },
+  proofOfWeight: {
+    title: "Proof of Weight: How to upload",
+    steps: [
+      "Pack all items into a single carton or flyer, then seal it.",
+      "Weigh the sealed parcel on a scale or measure it with a tape.",
+      "Take a picture showing the weight or dimensions.",
+      "Upload an image (JPG or PNG) under 1MB.",
+    ],
+  },
+};
 
 const EMPTY_ITEM: Item = { description: "", quantity: "1", value: "" };
 const emptyParcel = (): Parcel => ({ type: "Box", length: "", width: "", height: "" });
@@ -77,11 +121,26 @@ function asItems(v: unknown): Item[] {
   });
   return items.length > 0 ? items : [{ ...EMPTY_ITEM }];
 }
+function asUpload(v: unknown): UploadedFile | undefined {
+  const r = asRecord(v);
+  const path = asStr(r.path);
+  const url = asStr(r.url);
+  if (path === "" && url === "") return undefined;
+  return { path, url, name: asStr(r.name) || "Uploaded file" };
+}
 function asParcels(v: unknown): Parcel[] {
   if (!Array.isArray(v)) return [emptyParcel()];
   const parcels = v.map((x) => {
     const r = asRecord(x);
-    return { type: asStr(r.type, "Box") || "Box", length: asStr(r.length), width: asStr(r.width), height: asStr(r.height) };
+    return {
+      type: asStr(r.type, "Box") || "Box",
+      length: asStr(r.length),
+      width: asStr(r.width),
+      height: asStr(r.height),
+      parcelItems: asUpload(r.parcelItems),
+      proofOfPurchase: asUpload(r.proofOfPurchase),
+      proofOfWeight: asUpload(r.proofOfWeight),
+    };
   });
   return parcels.length > 0 ? parcels : [emptyParcel()];
 }
@@ -165,6 +224,40 @@ export function BookShipmentForm({
   const [isBooking, setIsBooking] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftMsg, setDraftMsg] = useState<string | null>(null);
+  const [sample, setSample] = useState<ProofSlot | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+
+  async function uploadProof(index: number, slot: ProofSlot, file: File) {
+    setError(null);
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setError("Upload a JPG or PNG image.");
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      setError("Image must be under 1MB.");
+      return;
+    }
+    const key = `${index}:${slot}`;
+    setUploading(key);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/shipments/proof-uploads", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.message ?? "Couldn't upload that file.");
+        return;
+      }
+      const uploaded: UploadedFile = { path: json.data.path, url: json.data.url, name: file.name };
+      setParcels((prev) => prev.map((p, i) => (i === index ? { ...p, [slot]: uploaded } : p)));
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  function removeProof(index: number, slot: ProofSlot) {
+    setParcels((prev) => prev.map((p, i) => (i === index ? { ...p, [slot]: undefined } : p)));
+  }
 
   // Clears a field's error highlight as soon as the user edits it.
   function clearInvalid(key: string) {
@@ -398,6 +491,9 @@ export function BookShipmentForm({
             width_cm: num(p.width) || undefined,
             height_cm: num(p.height) || undefined,
             volumetric_kg: parcelVolumetric(p),
+            parcel_items_file: p.parcelItems?.path,
+            proof_of_purchase_file: p.proofOfPurchase?.path,
+            proof_of_weight_file: p.proofOfWeight?.path,
           })),
           items: filledItems.map((it) => {
             const qty = Number(it.quantity);
@@ -525,6 +621,20 @@ export function BookShipmentForm({
                       <span className={fieldLabel}>Height (cm){requiredMark}</span>
                       <input type="number" min="0" value={p.height} onChange={(e) => { const v = e.target.value; setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, height: v } : x))); clearInvalid(`parcel.${i}.height`); }} placeholder="0" className={`${smallInput} ${invalid.has(`parcel.${i}.height`) ? errorBorder : ""}`} />
                     </label>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                    {PROOF_SLOTS.map((slot) => (
+                      <ProofUpload
+                        key={slot.key}
+                        label={slot.label}
+                        file={p[slot.key]}
+                        busy={uploading === `${i}:${slot.key}`}
+                        onSample={() => setSample(slot.key)}
+                        onUpload={(f) => uploadProof(i, slot.key, f)}
+                        onRemove={() => removeProof(i, slot.key)}
+                      />
+                    ))}
                   </div>
                 </div>
               ))}
@@ -694,6 +804,8 @@ export function BookShipmentForm({
           </div>
         </div>
       </div>
+
+      {sample ? <SampleModal slot={sample} onClose={() => setSample(null)} /> : null}
     </div>
   );
 }
@@ -803,5 +915,146 @@ function AddressSection({
         </div>
       )}
     </div>
+  );
+}
+
+function ProofUpload({
+  label,
+  file,
+  busy,
+  onSample,
+  onUpload,
+  onRemove,
+}: {
+  label: string;
+  file?: UploadedFile;
+  busy: boolean;
+  onSample: () => void;
+  onUpload: (file: File) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-navy">{label}</span>
+        <button type="button" onClick={onSample} className="shrink-0 text-xs font-semibold text-red hover:underline">
+          View Sample
+        </button>
+      </div>
+
+      {file ? (
+        <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-black/10 p-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={file.url} alt={label} className="h-10 w-10 rounded object-cover" />
+          <span className="min-w-0 flex-1 truncate text-xs text-body">{file.name}</span>
+          <button type="button" onClick={onRemove} className="shrink-0 text-xs font-semibold text-red hover:underline">
+            Remove
+          </button>
+        </div>
+      ) : (
+        <>
+          <label
+            className={`mt-1.5 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-black/10 px-3 py-2 text-sm font-semibold text-navy transition-colors hover:border-navy ${busy ? "pointer-events-none opacity-60" : ""}`}
+          >
+            <span aria-hidden>↑</span> {busy ? "Uploading…" : "Upload"}
+            <input
+              type="file"
+              accept="image/png,image/jpeg"
+              hidden
+              disabled={busy}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onUpload(f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <p className="mt-1 text-xs text-body">No file uploaded</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function SampleModal({ slot, onClose }: { slot: ProofSlot; onClose: () => void }) {
+  const sample = PROOF_SAMPLES[slot];
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="text-lg font-bold text-navy">{sample.title}</h3>
+          <button type="button" onClick={onClose} aria-label="Close" className="shrink-0 text-body hover:text-navy">
+            ✕
+          </button>
+        </div>
+        <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-body">
+          {sample.steps.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ul>
+        <div className="mt-4 flex justify-center rounded-xl border border-black/10 p-4">
+          <ProofSampleArt slot={slot} />
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-5 w-full rounded-full bg-red px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-light"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Simple illustrative artwork for each proof type (no external assets). */
+function ProofSampleArt({ slot }: { slot: ProofSlot }) {
+  if (slot === "proofOfWeight") {
+    return (
+      <svg viewBox="0 0 200 140" className="h-32 w-auto" role="img" aria-label="Sealed box on a weighing scale">
+        <rect x="55" y="18" width="90" height="60" rx="4" fill="#d9a566" stroke="#a9772f" strokeWidth="2" />
+        <path d="M55 40 h90" stroke="#a9772f" strokeWidth="2" />
+        <path d="M100 18 v22" stroke="#a9772f" strokeWidth="2" />
+        <rect x="40" y="86" width="120" height="30" rx="4" fill="#3b3b46" />
+        <rect x="52" y="94" width="34" height="14" rx="2" fill="#29abe2" />
+        <rect x="150" y="116" width="8" height="10" fill="#3b3b46" />
+        <rect x="42" y="116" width="8" height="10" fill="#3b3b46" />
+      </svg>
+    );
+  }
+  if (slot === "proofOfPurchase") {
+    return (
+      <svg viewBox="0 0 200 140" className="h-32 w-auto" role="img" aria-label="Shopping receipts">
+        {[18, 74, 130].map((x) => (
+          <g key={x}>
+            <rect x={x} y="20" width="52" height="100" fill="#f4f4f5" stroke="#c9c9d1" strokeWidth="1.5" />
+            <rect x={x + 8} y="30" width="36" height="5" fill="#c9c9d1" />
+            <rect x={x + 8} y="44" width="36" height="3" fill="#dcdce1" />
+            <rect x={x + 8} y="52" width="36" height="3" fill="#dcdce1" />
+            <rect x={x + 8} y="60" width="24" height="3" fill="#dcdce1" />
+            <rect x={x + 8} y="100" width="36" height="8" fill="#3b3b46" />
+          </g>
+        ))}
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 200 140" className="h-32 w-auto" role="img" aria-label="Parcel contents arranged for a photo">
+      <rect x="20" y="16" width="160" height="108" rx="6" fill="#efe7dc" stroke="#c9b79a" strokeWidth="2" />
+      {[0, 1, 2].map((r) =>
+        [0, 1, 2, 3].map((c) => (
+          <rect
+            key={`${r}-${c}`}
+            x={32 + c * 38}
+            y={28 + r * 32}
+            width="30"
+            height="24"
+            rx="3"
+            fill={["#c8361d", "#29abe2", "#ffb930", "#0e104b"][(r + c) % 4]}
+            opacity="0.85"
+          />
+        )),
+      )}
+    </svg>
   );
 }
