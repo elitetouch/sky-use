@@ -935,8 +935,8 @@ function ProofUpload({
 }) {
   return (
     <div>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-navy">{label}</span>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="whitespace-nowrap text-sm font-semibold text-navy">{label}</span>
         <button type="button" onClick={onSample} className="shrink-0 text-xs font-semibold text-red hover:underline">
           View Sample
         </button>
