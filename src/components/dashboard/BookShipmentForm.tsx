@@ -108,6 +108,10 @@ const smallInput =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy";
 const fieldLabel = "mb-1 block text-sm font-medium text-navy";
 const optionalHint = <span className="font-normal text-body"> (optional)</span>;
+const requiredMark = <span className="text-red"> *</span>;
+// `!` (important) is needed so it wins over the base `border-black/10`.
+const errorBorder = "!border-red";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function num(v: string): number {
   const n = Number(v);
@@ -157,9 +161,20 @@ export function BookShipmentForm({
   const [ratesLoading, setRatesLoading] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
+  const [invalid, setInvalid] = useState<Set<string>>(new Set());
   const [isBooking, setIsBooking] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftMsg, setDraftMsg] = useState<string | null>(null);
+
+  // Clears a field's error highlight as soon as the user edits it.
+  function clearInvalid(key: string) {
+    setInvalid((prev) => {
+      if (!prev.has(key)) return prev;
+      const nextSet = new Set(prev);
+      nextSet.delete(key);
+      return nextSet;
+    });
+  }
 
   const filledItems = items.filter((i) => i.description.trim() !== "");
   const totalVolumetric = Math.round(parcels.reduce((s, p) => s + parcelVolumetric(p), 0) * 100) / 100;
@@ -174,26 +189,55 @@ export function BookShipmentForm({
     return receiverCountry().trim().toLowerCase() === "nigeria" ? "local" : "international";
   }
 
-  function addressValid(m: Mode, id: string, form: AddressForm): boolean {
-    if (m === "saved") return id !== "";
-    return (
-      form.contact_name.trim() !== "" &&
-      form.phone.trim() !== "" &&
-      form.line1.trim() !== "" &&
-      form.city.trim() !== "" &&
-      form.state.trim() !== ""
-    );
+  // Validates one address. Returns the invalid field keys (prefixed so they can
+  // highlight the right inputs) plus a message naming what's missing, or null.
+  function validateAddress(
+    prefix: "sender" | "receiver",
+    m: Mode,
+    id: string,
+    form: AddressForm,
+  ): { keys: string[]; message: string } | null {
+    const who = prefix === "sender" ? "sender" : "receiver";
+    if (m === "saved") {
+      return id !== "" ? null : { keys: [`${prefix}.saved`], message: `Select a saved ${who} address.` };
+    }
+    const required: [keyof AddressForm, string][] = [
+      ["contact_name", "full name"],
+      ["phone", "phone"],
+      ["line1", "address line 1"],
+      ["city", "city"],
+      ["state", "state"],
+      ["country", "country"],
+    ];
+    const missing = required.filter(([f]) => form[f].trim() === "");
+    const keys = missing.map(([f]) => `${prefix}.${f}`);
+    const emailBad = form.email.trim() !== "" && !EMAIL_RE.test(form.email.trim());
+    if (emailBad) keys.push(`${prefix}.email`);
+    if (keys.length === 0) return null;
+
+    const parts: string[] = [];
+    if (missing.length > 0) parts.push(`Complete the ${who} address — missing: ${missing.map(([, l]) => l).join(", ")}.`);
+    if (emailBad) parts.push("Enter a valid email address or leave it blank.");
+    return { keys, message: parts.join(" ") };
   }
 
   async function next() {
     setError(null);
-    if (step === 0 && !addressValid(senderMode, senderId, senderNew)) {
-      setError("Complete the sender address (name, phone, address, city, state).");
-      return;
+
+    if (step === 0) {
+      const result = validateAddress("sender", senderMode, senderId, senderNew);
+      if (result) {
+        setInvalid(new Set(result.keys));
+        setError(result.message);
+        return;
+      }
     }
+
     if (step === 1) {
-      if (!addressValid(receiverMode, receiverId, receiverNew)) {
-        setError("Complete the receiver address (name, phone, address, city, state).");
+      const result = validateAddress("receiver", receiverMode, receiverId, receiverNew);
+      if (result) {
+        setInvalid(new Set(result.keys));
+        setError(result.message);
         return;
       }
       if (senderMode === "saved" && receiverMode === "saved" && senderId === receiverId) {
@@ -201,22 +245,47 @@ export function BookShipmentForm({
         return;
       }
     }
+
     if (step === 2) {
-      if (billable <= 0) {
-        setError("Enter a declared weight, or parcel dimensions for volumetric weight.");
+      const keys: string[] = [];
+      if (declared <= 0) keys.push("weight");
+      parcels.forEach((p, i) => {
+        if (num(p.length) <= 0) keys.push(`parcel.${i}.length`);
+        if (num(p.width) <= 0) keys.push(`parcel.${i}.width`);
+        if (num(p.height) <= 0) keys.push(`parcel.${i}.height`);
+      });
+      // Any item that has a quantity/value but no description is incomplete.
+      items.forEach((it, i) => {
+        const hasDetail = it.value.trim() !== "" || (it.quantity.trim() !== "" && it.quantity.trim() !== "1");
+        if (hasDetail && it.description.trim() === "") keys.push(`item.${i}.description`);
+      });
+      if (keys.length > 0) {
+        setInvalid(new Set(keys));
+        const onlyWeight = keys.length === 1 && keys[0] === "weight";
+        const itemIssue = keys.some((k) => k.startsWith("item."));
+        setError(
+          onlyWeight
+            ? "Enter the declared weight (kg)."
+            : itemIssue && keys.every((k) => k.startsWith("item."))
+              ? "Add a name for each item you've listed, or remove it."
+              : "Enter the declared weight and every parcel's length, width and height.",
+        );
         return;
       }
       await loadRates();
     }
+
     if (step === 3 && !selected) {
       setError("Choose a service to continue.");
       return;
     }
+
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
 
   function back() {
     setError(null);
+    setInvalid(new Set());
     setStep((s) => Math.max(s - 1, 0));
   }
 
@@ -384,11 +453,11 @@ export function BookShipmentForm({
 
       <div className="rounded-2xl border border-black/5 p-6">
         {step === 0 ? (
-          <AddressSection title="Ship from" addresses={addresses} mode={senderMode} setMode={setSenderMode} selectedId={senderId} setSelectedId={setSenderId} form={senderNew} setForm={setSenderNew} />
+          <AddressSection title="Ship from" prefix="sender" addresses={addresses} mode={senderMode} setMode={setSenderMode} selectedId={senderId} setSelectedId={setSenderId} form={senderNew} setForm={setSenderNew} invalid={invalid} clearInvalid={clearInvalid} />
         ) : null}
 
         {step === 1 ? (
-          <AddressSection title="Ship to" addresses={addresses} mode={receiverMode} setMode={setReceiverMode} selectedId={receiverId} setSelectedId={setReceiverId} form={receiverNew} setForm={setReceiverNew} />
+          <AddressSection title="Ship to" prefix="receiver" addresses={addresses} mode={receiverMode} setMode={setReceiverMode} selectedId={receiverId} setSelectedId={setReceiverId} form={receiverNew} setForm={setReceiverNew} invalid={invalid} clearInvalid={clearInvalid} />
         ) : null}
 
         {step === 2 ? (
@@ -445,16 +514,16 @@ export function BookShipmentForm({
                       </select>
                     </label>
                     <label className="block">
-                      <span className={fieldLabel}>Length (cm)</span>
-                      <input type="number" min="0" value={p.length} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, length: e.target.value } : x)))} placeholder="0" className={smallInput} />
+                      <span className={fieldLabel}>Length (cm){requiredMark}</span>
+                      <input type="number" min="0" value={p.length} onChange={(e) => { const v = e.target.value; setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, length: v } : x))); clearInvalid(`parcel.${i}.length`); }} placeholder="0" className={`${smallInput} ${invalid.has(`parcel.${i}.length`) ? errorBorder : ""}`} />
                     </label>
                     <label className="block">
-                      <span className={fieldLabel}>Width (cm)</span>
-                      <input type="number" min="0" value={p.width} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, width: e.target.value } : x)))} placeholder="0" className={smallInput} />
+                      <span className={fieldLabel}>Width (cm){requiredMark}</span>
+                      <input type="number" min="0" value={p.width} onChange={(e) => { const v = e.target.value; setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, width: v } : x))); clearInvalid(`parcel.${i}.width`); }} placeholder="0" className={`${smallInput} ${invalid.has(`parcel.${i}.width`) ? errorBorder : ""}`} />
                     </label>
                     <label className="block">
-                      <span className={fieldLabel}>Height (cm)</span>
-                      <input type="number" min="0" value={p.height} onChange={(e) => setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, height: e.target.value } : x)))} placeholder="0" className={smallInput} />
+                      <span className={fieldLabel}>Height (cm){requiredMark}</span>
+                      <input type="number" min="0" value={p.height} onChange={(e) => { const v = e.target.value; setParcels((prev) => prev.map((x, idx) => (idx === i ? { ...x, height: v } : x))); clearInvalid(`parcel.${i}.height`); }} placeholder="0" className={`${smallInput} ${invalid.has(`parcel.${i}.height`) ? errorBorder : ""}`} />
                     </label>
                   </div>
                 </div>
@@ -466,8 +535,8 @@ export function BookShipmentForm({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-semibold text-navy">Declared weight (kg)</label>
-                <input type="number" min="0.1" step="0.1" value={declaredWeight} onChange={(e) => setDeclaredWeight(e.target.value)} className={inputClass} />
+                <label className="block text-sm font-semibold text-navy">Declared weight (kg){requiredMark}</label>
+                <input type="number" min="0.1" step="0.1" value={declaredWeight} onChange={(e) => { setDeclaredWeight(e.target.value); clearInvalid("weight"); }} className={`${inputClass} ${invalid.has("weight") ? errorBorder : ""}`} />
                 <p className="mt-1 text-xs text-body">
                   Billable weight: <strong>{billable}kg</strong>
                   {volumetricDrives ? " (volumetric applies)" : ""}
@@ -492,7 +561,7 @@ export function BookShipmentForm({
               <div className="mt-1 space-y-2">
                 {items.map((item, i) => (
                   <div key={i} className="grid grid-cols-12 items-center gap-2">
-                    <input value={item.description} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, description: e.target.value } : x)))} placeholder="e.g. Shoes" className={`col-span-6 ${smallInput}`} />
+                    <input value={item.description} onChange={(e) => { const v = e.target.value; setItems((p) => p.map((x, idx) => (idx === i ? { ...x, description: v } : x))); clearInvalid(`item.${i}.description`); }} placeholder="e.g. Shoes" className={`col-span-6 ${smallInput} ${invalid.has(`item.${i}.description`) ? errorBorder : ""}`} />
                     <input type="number" min="1" value={item.quantity} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, quantity: e.target.value } : x)))} placeholder="1" className={`col-span-2 ${smallInput}`} />
                     <input type="number" min="0" value={item.value} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))} placeholder="0" className={`col-span-3 ${smallInput}`} />
                     <button type="button" onClick={() => setItems((p) => (p.length === 1 ? p : p.filter((_, idx) => idx !== i)))} className="col-span-1 text-red hover:text-red/70" aria-label="Remove item">
@@ -631,6 +700,7 @@ export function BookShipmentForm({
 
 function AddressSection({
   title,
+  prefix,
   addresses,
   mode,
   setMode,
@@ -638,8 +708,11 @@ function AddressSection({
   setSelectedId,
   form,
   setForm,
+  invalid,
+  clearInvalid,
 }: {
   title: string;
+  prefix: "sender" | "receiver";
   addresses: Address[];
   mode: Mode;
   setMode: (m: Mode) => void;
@@ -647,10 +720,16 @@ function AddressSection({
   setSelectedId: (id: string) => void;
   form: AddressForm;
   setForm: (updater: (prev: AddressForm) => AddressForm) => void;
+  invalid: Set<string>;
+  clearInvalid: (key: string) => void;
 }) {
   const hasSaved = addresses.length > 0;
-  const set = (field: keyof AddressForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const set = (field: keyof AddressForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setForm((prev) => ({ ...prev, [field]: value }));
+    clearInvalid(`${prefix}.${field}`);
+  };
+  const err = (field: keyof AddressForm) => (invalid.has(`${prefix}.${field}`) ? errorBorder : "");
 
   return (
     <div>
@@ -686,40 +765,40 @@ function AddressSection({
       ) : (
         <div className="mt-2 grid grid-cols-2 gap-3">
           <label className="block">
-            <span className={fieldLabel}>Full name</span>
-            <input value={form.contact_name} onChange={set("contact_name")} placeholder="e.g. Jane Doe" className={smallInput} />
+            <span className={fieldLabel}>Full name{requiredMark}</span>
+            <input value={form.contact_name} onChange={set("contact_name")} placeholder="e.g. Jane Doe" className={`${smallInput} ${err("contact_name")}`} />
           </label>
           <label className="block">
-            <span className={fieldLabel}>Phone</span>
-            <input value={form.phone} onChange={set("phone")} placeholder="e.g. 0803 000 0000" className={smallInput} />
+            <span className={fieldLabel}>Phone{requiredMark}</span>
+            <input value={form.phone} onChange={set("phone")} placeholder="e.g. 0803 000 0000" className={`${smallInput} ${err("phone")}`} />
           </label>
           <label className="col-span-2 block">
             <span className={fieldLabel}>Email{optionalHint}</span>
-            <input type="email" value={form.email} onChange={set("email")} placeholder="name@email.com" className={smallInput} />
+            <input type="email" value={form.email} onChange={set("email")} placeholder="name@email.com" className={`${smallInput} ${err("email")}`} />
           </label>
           <label className="col-span-2 block">
-            <span className={fieldLabel}>Address line 1</span>
-            <input value={form.line1} onChange={set("line1")} placeholder="Street address" className={smallInput} />
+            <span className={fieldLabel}>Address line 1{requiredMark}</span>
+            <input value={form.line1} onChange={set("line1")} placeholder="Street address" className={`${smallInput} ${err("line1")}`} />
           </label>
           <label className="col-span-2 block">
             <span className={fieldLabel}>Address line 2{optionalHint}</span>
             <input value={form.line2} onChange={set("line2")} placeholder="Apartment, suite, unit, etc." className={smallInput} />
           </label>
           <label className="block">
-            <span className={fieldLabel}>City</span>
-            <input value={form.city} onChange={set("city")} placeholder="City" className={smallInput} />
+            <span className={fieldLabel}>City{requiredMark}</span>
+            <input value={form.city} onChange={set("city")} placeholder="City" className={`${smallInput} ${err("city")}`} />
           </label>
           <label className="block">
-            <span className={fieldLabel}>State / Province</span>
-            <input value={form.state} onChange={set("state")} placeholder="State or province" className={smallInput} />
+            <span className={fieldLabel}>State / Province{requiredMark}</span>
+            <input value={form.state} onChange={set("state")} placeholder="State or province" className={`${smallInput} ${err("state")}`} />
           </label>
           <label className="block">
             <span className={fieldLabel}>Postal code{optionalHint}</span>
             <input value={form.postal_code} onChange={set("postal_code")} placeholder="Postal / ZIP code" className={smallInput} />
           </label>
           <label className="block">
-            <span className={fieldLabel}>Country</span>
-            <input value={form.country} onChange={set("country")} placeholder="Country" className={smallInput} />
+            <span className={fieldLabel}>Country{requiredMark}</span>
+            <input value={form.country} onChange={set("country")} placeholder="Country" className={`${smallInput} ${err("country")}`} />
           </label>
         </div>
       )}
