@@ -10,6 +10,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/shipments/new", label: "Book a Shipment" },
   { href: "/dashboard/wallet", label: "Wallet" },
   { href: "/dashboard/addresses", label: "Addresses" },
+  { href: "/dashboard/security", label: "Security" },
 ];
 
 export default async function CustomerLayout({ children }: { children: ReactNode }) {
