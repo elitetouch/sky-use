@@ -38,7 +38,7 @@ export function DashboardShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-black/5 bg-white px-6 py-4 print:hidden">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-black/5 bg-white px-6 py-4 print:hidden">
           <div className="md:hidden">
             <Logo />
           </div>
