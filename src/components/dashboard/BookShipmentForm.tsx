@@ -1007,8 +1007,33 @@ function SampleModal({ slot, onClose }: { slot: ProofSlot; onClose: () => void }
   );
 }
 
-/** Simple illustrative artwork for each proof type (no external assets). */
+// Real sample photos, dropped into /public/samples. If a file is missing the
+// component falls back to the built-in SVG illustration, so the popup always
+// shows something.
+const SAMPLE_IMAGES: Record<ProofSlot, string> = {
+  parcelItems: "/samples/parcel-items.jpg",
+  proofOfPurchase: "/samples/proof-of-purchase.jpg",
+  proofOfWeight: "/samples/proof-of-weight.jpg",
+};
+
 function ProofSampleArt({ slot }: { slot: ProofSlot }) {
+  const [broken, setBroken] = useState(false);
+  if (!broken) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={SAMPLE_IMAGES[slot]}
+        alt="Sample"
+        onError={() => setBroken(true)}
+        className="max-h-64 w-auto rounded-lg object-contain"
+      />
+    );
+  }
+  return <ProofSampleFallback slot={slot} />;
+}
+
+/** Built-in illustration used until a real sample photo is added. */
+function ProofSampleFallback({ slot }: { slot: ProofSlot }) {
   if (slot === "proofOfWeight") {
     return (
       <svg viewBox="0 0 200 140" className="h-32 w-auto" role="img" aria-label="Sealed box on a weighing scale">
