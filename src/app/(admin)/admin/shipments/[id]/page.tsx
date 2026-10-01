@@ -12,6 +12,7 @@ import { UpdateStatusForm } from "@/components/admin/UpdateStatusForm";
 import { AssignCourierForm } from "@/components/admin/AssignCourierForm";
 import { PaymentStatusForm } from "@/components/admin/PaymentStatusForm";
 import { DeleteShipmentButton } from "@/components/admin/DeleteShipmentButton";
+import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
 
 export const metadata: Metadata = {
   title: "Shipment Detail",
@@ -121,7 +122,10 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
           <div className="grid gap-6 sm:grid-cols-2">
             {shipment.sender_address ? (
               <div className="rounded-2xl border border-black/5 p-6">
-                <p className="text-sm font-semibold text-navy">From</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-navy">From</p>
+                  {shipment.sender_address.nin_verified ? <VerifiedBadge /> : null}
+                </div>
                 <p className="mt-2 text-sm text-body">{shipment.sender_address.contact_name}</p>
                 <p className="text-sm text-body">{shipment.sender_address.phone}</p>
                 <p className="mt-1 text-sm text-body">
@@ -131,7 +135,10 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
             ) : null}
             {shipment.receiver_address ? (
               <div className="rounded-2xl border border-black/5 p-6">
-                <p className="text-sm font-semibold text-navy">To</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-navy">To</p>
+                  {shipment.receiver_address.nin_verified ? <VerifiedBadge /> : null}
+                </div>
                 <p className="mt-2 text-sm text-body">{shipment.receiver_address.contact_name}</p>
                 <p className="text-sm text-body">{shipment.receiver_address.phone}</p>
                 <p className="mt-1 text-sm text-body">
