@@ -74,11 +74,11 @@ export default async function AdminShipmentsPage({
         </div>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-black/5">
+      <div className="mt-6 overflow-x-auto rounded-2xl border border-black/5">
         {shipments.length === 0 ? (
           <p className="p-6 text-sm text-body">No shipments found.</p>
         ) : (
-          <table className="w-full text-left text-sm">
+          <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="bg-[#f5f5f5] text-xs uppercase tracking-wide text-body">
               <tr>
                 <th className="px-5 py-3">Tracking #</th>

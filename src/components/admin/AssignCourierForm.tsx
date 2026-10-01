@@ -8,6 +8,7 @@ const COURIERS = [
   { value: "internal", label: "Skyfot Fleet" },
   { value: "dhl", label: "DHL Express" },
   { value: "ups", label: "UPS" },
+  { value: "terminal", label: "Terminal (DHL · UPS · FedEx)" },
 ];
 
 export function AssignCourierForm({
