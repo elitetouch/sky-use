@@ -348,16 +348,12 @@ export function BookShipmentForm({
         if (num(p.width) <= 0) keys.push(`parcel.${i}.width`);
         if (num(p.height) <= 0) keys.push(`parcel.${i}.height`);
 
-        // Each parcel needs at least one item with a name and a weight.
-        const complete = p.items.filter((it) => it.description.trim() !== "" && num(it.weight) > 0);
-        if (complete.length === 0) keys.push(`parcel.${i}.items`);
-
-        // Highlight rows the customer started but left incomplete.
+        // Every item field is required.
         p.items.forEach((it, j) => {
-          const started = it.description.trim() !== "" || num(it.weight) > 0 || num(it.value) > 0;
-          if (!started) return;
           if (it.description.trim() === "") keys.push(`parcel.${i}.item.${j}.description`);
+          if (num(it.quantity) < 1) keys.push(`parcel.${i}.item.${j}.quantity`);
           if (num(it.weight) <= 0) keys.push(`parcel.${i}.item.${j}.weight`);
+          if (it.value.trim() === "") keys.push(`parcel.${i}.item.${j}.value`);
         });
       });
 
@@ -367,7 +363,7 @@ export function BookShipmentForm({
         setError(
           dimIssue
             ? "Enter every parcel's length, width and height."
-            : "Add at least one item with a name and weight to each parcel.",
+            : "Fill in every item's name, quantity, weight and value.",
         );
         return;
       }
@@ -630,19 +626,19 @@ export function BookShipmentForm({
                       </button>
                     </div>
                     <div className="mt-2 grid grid-cols-12 gap-2 px-1">
-                      <span className={`col-span-5 ${fieldLabel} mb-0`}>Item</span>
-                      <span className={`col-span-2 ${fieldLabel} mb-0`}>Qty</span>
-                      <span className={`col-span-2 ${fieldLabel} mb-0`}>Weight (kg)</span>
-                      <span className={`col-span-2 ${fieldLabel} mb-0`}>Value ({currency})</span>
+                      <span className={`col-span-5 ${fieldLabel} mb-0`}>Item{requiredMark}</span>
+                      <span className={`col-span-2 ${fieldLabel} mb-0`}>Qty{requiredMark}</span>
+                      <span className={`col-span-2 ${fieldLabel} mb-0`}>Weight (kg){requiredMark}</span>
+                      <span className={`col-span-2 ${fieldLabel} mb-0`}>Value ({currency}){requiredMark}</span>
                       <span className="col-span-1" />
                     </div>
                     <div className="mt-1 space-y-2">
                       {p.items.map((item, j) => (
                         <div key={j} className="grid grid-cols-12 items-center gap-2">
-                          <input value={item.description} onChange={(e) => { setItemField(i, j, { description: e.target.value }); clearInvalid(`parcel.${i}.item.${j}.description`); clearInvalid(`parcel.${i}.items`); }} placeholder="e.g. Shoes" className={`col-span-5 ${smallInput} ${invalid.has(`parcel.${i}.item.${j}.description`) ? errorBorder : ""}`} />
-                          <input type="number" min="1" value={item.quantity} onChange={(e) => setItemField(i, j, { quantity: e.target.value })} placeholder="1" className={`col-span-2 ${smallInput}`} />
-                          <input type="number" min="0" step="0.1" value={item.weight} onChange={(e) => { setItemField(i, j, { weight: e.target.value }); clearInvalid(`parcel.${i}.item.${j}.weight`); clearInvalid(`parcel.${i}.items`); }} placeholder="0" className={`col-span-2 ${smallInput} ${invalid.has(`parcel.${i}.item.${j}.weight`) ? errorBorder : ""}`} />
-                          <input type="number" min="0" value={item.value} onChange={(e) => setItemField(i, j, { value: e.target.value })} placeholder="0" className={`col-span-2 ${smallInput}`} />
+                          <input value={item.description} onChange={(e) => { setItemField(i, j, { description: e.target.value }); clearInvalid(`parcel.${i}.item.${j}.description`); }} placeholder="e.g. Shoes" className={`col-span-5 ${smallInput} ${invalid.has(`parcel.${i}.item.${j}.description`) ? errorBorder : ""}`} />
+                          <input type="number" min="1" value={item.quantity} onChange={(e) => { setItemField(i, j, { quantity: e.target.value }); clearInvalid(`parcel.${i}.item.${j}.quantity`); }} placeholder="1" className={`col-span-2 ${smallInput} ${invalid.has(`parcel.${i}.item.${j}.quantity`) ? errorBorder : ""}`} />
+                          <input type="number" min="0" step="0.1" value={item.weight} onChange={(e) => { setItemField(i, j, { weight: e.target.value }); clearInvalid(`parcel.${i}.item.${j}.weight`); }} placeholder="0" className={`col-span-2 ${smallInput} ${invalid.has(`parcel.${i}.item.${j}.weight`) ? errorBorder : ""}`} />
+                          <input type="number" min="0" value={item.value} onChange={(e) => { setItemField(i, j, { value: e.target.value }); clearInvalid(`parcel.${i}.item.${j}.value`); }} placeholder="0" className={`col-span-2 ${smallInput} ${invalid.has(`parcel.${i}.item.${j}.value`) ? errorBorder : ""}`} />
                           <button type="button" onClick={() => removeItem(i, j)} className="col-span-1 text-red hover:text-red/70" aria-label="Remove item">
                             ✕
                           </button>
@@ -653,9 +649,6 @@ export function BookShipmentForm({
                       Parcel weight: <strong className="text-navy">{parcelWeight(p)}kg</strong> · Value:{" "}
                       <strong className="text-navy">{formatNaira(Math.round(parcelValue(p) * 100))}</strong>
                     </p>
-                    {invalid.has(`parcel.${i}.items`) ? (
-                      <p className="mt-1 text-xs text-red">Add at least one item with a name and weight.</p>
-                    ) : null}
                   </div>
 
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
