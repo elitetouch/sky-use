@@ -177,7 +177,10 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
             <AssignCourierForm
               shipmentId={shipment.id}
               currentCourier={shipment.courier}
-              currentTrackingNumber={shipment.courier_tracking_number}
+              currentTrackingNumbers={
+                shipment.courier_tracking_numbers ??
+                (shipment.courier_tracking_number ? [shipment.courier_tracking_number] : [])
+              }
             />
           ) : null}
 

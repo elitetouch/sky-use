@@ -12,6 +12,7 @@ type StatusEvent = {
   location: string | null;
   note: string | null;
   link: string | null;
+  links?: string[];
   created_at: string;
 };
 
@@ -168,16 +169,17 @@ export function TrackLookup() {
                   <p className="text-sm font-semibold text-navy">{event.label}</p>
                   {event.location ? <p className="text-xs text-body">{event.location}</p> : null}
                   {event.note ? <p className="text-xs text-body">{event.note}</p> : null}
-                  {event.link ? (
+                  {(event.links?.length ? event.links : event.link ? [event.link] : []).map((l) => (
                     <a
-                      href={event.link}
+                      key={l}
+                      href={l}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-0.5 inline-block break-all text-xs font-semibold text-red hover:underline"
+                      className="mt-0.5 block break-all text-xs font-semibold text-red hover:underline"
                     >
-                      {event.link}
+                      {l}
                     </a>
-                  ) : null}
+                  ))}
                   <p className="mt-1 text-xs text-body/70">
                     {formatDateTime(event.created_at)}
                   </p>

@@ -19,7 +19,7 @@ export function UpdateStatusForm({
   const [note, setNote] = useState("");
   const [noteEdited, setNoteEdited] = useState(false);
   const [location, setLocation] = useState("");
-  const [link, setLink] = useState("");
+  const [links, setLinks] = useState<string[]>([""]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,7 +46,7 @@ export function UpdateStatusForm({
           status_template_id: templateId,
           note: note || undefined,
           location: location || undefined,
-          link: link || undefined,
+          links: links.map((l) => l.trim()).filter((l) => l !== ""),
         }),
       });
 
@@ -58,7 +58,7 @@ export function UpdateStatusForm({
       }
 
       setLocation("");
-      setLink("");
+      setLinks([""]);
       setNote("");
       setNoteEdited(false);
       router.refresh();
@@ -100,13 +100,36 @@ export function UpdateStatusForm({
         className={selectClass}
       />
 
-      <input
-        type="url"
-        value={link}
-        onChange={(e) => setLink(e.target.value)}
-        placeholder="Link (optional, e.g. https://…)"
-        className={selectClass}
-      />
+      <div className="space-y-2">
+        {links.map((link, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              type="url"
+              value={link}
+              onChange={(e) => setLinks((prev) => prev.map((l, idx) => (idx === i ? e.target.value : l)))}
+              placeholder="Link (optional, e.g. https://…)"
+              className={selectClass}
+            />
+            {links.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => setLinks((prev) => prev.filter((_, idx) => idx !== i))}
+                className="shrink-0 text-red hover:text-red/70"
+                aria-label="Remove link"
+              >
+                ✕
+              </button>
+            ) : null}
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setLinks((prev) => [...prev, ""])}
+          className="text-xs font-semibold text-navy hover:text-red"
+        >
+          + Add another link
+        </button>
+      </div>
 
       {error ? <p className="text-sm text-red">{error}</p> : null}
 

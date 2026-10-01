@@ -33,6 +33,7 @@ export type StatusEvent = {
   location: string | null;
   note: string | null;
   link: string | null;
+  links?: string[];
   created_at: string;
 };
 
@@ -99,6 +100,7 @@ export type AdminShipment = Shipment & {
   courier: string | null;
   courier_label: string | null;
   courier_tracking_number: string | null;
+  courier_tracking_numbers?: string[];
   terminal_shipment_id: string | null;
   carrier: string | null;
   declared_value_kobo: number | null;

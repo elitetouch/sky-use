@@ -13,15 +13,17 @@ const COURIERS = [
 export function AssignCourierForm({
   shipmentId,
   currentCourier,
-  currentTrackingNumber,
+  currentTrackingNumbers,
 }: {
   shipmentId: string;
   currentCourier: string | null;
-  currentTrackingNumber: string | null;
+  currentTrackingNumbers: string[];
 }) {
   const router = useRouter();
   const [courier, setCourier] = useState(currentCourier ?? "internal");
-  const [trackingNumber, setTrackingNumber] = useState(currentTrackingNumber ?? "");
+  const [trackingNumbers, setTrackingNumbers] = useState<string[]>(
+    currentTrackingNumbers.length > 0 ? currentTrackingNumbers : [""],
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,7 +38,7 @@ export function AssignCourierForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           courier,
-          courier_tracking_number: trackingNumber || undefined,
+          courier_tracking_numbers: trackingNumbers.map((t) => t.trim()).filter((t) => t !== ""),
         }),
       });
 
@@ -70,12 +72,35 @@ export function AssignCourierForm({
       </select>
 
       {courier !== "internal" ? (
-        <input
-          value={trackingNumber}
-          onChange={(e) => setTrackingNumber(e.target.value)}
-          placeholder="Courier tracking / waybill number"
-          className="w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy"
-        />
+        <div className="space-y-2">
+          {trackingNumbers.map((tn, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                value={tn}
+                onChange={(e) => setTrackingNumbers((prev) => prev.map((t, idx) => (idx === i ? e.target.value : t)))}
+                placeholder="Courier tracking / waybill number"
+                className="w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy"
+              />
+              {trackingNumbers.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setTrackingNumbers((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="shrink-0 text-red hover:text-red/70"
+                  aria-label="Remove tracking number"
+                >
+                  ✕
+                </button>
+              ) : null}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setTrackingNumbers((prev) => [...prev, ""])}
+            className="text-xs font-semibold text-navy hover:text-red"
+          >
+            + Add another tracking number
+          </button>
+        </div>
       ) : null}
 
       {error ? <p className="text-sm text-red">{error}</p> : null}
