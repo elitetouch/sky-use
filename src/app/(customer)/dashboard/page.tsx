@@ -5,6 +5,7 @@ import { getCurrentUser, getSessionToken } from "@/lib/session";
 import type { PaginatedResult, Shipment, Wallet } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { LinkButton } from "@/components/ui/Button";
+import { NinAlert } from "@/components/identity/NinAlert";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -25,6 +26,8 @@ export default async function DashboardPage() {
     <div>
       <h1 className="text-2xl font-bold text-navy">Welcome back, {user?.name.split(" ")[0]}</h1>
       <p className="mt-1 text-body">Here&apos;s what&apos;s happening with your shipments.</p>
+
+      {user && !user.nin_verified ? <NinAlert /> : null}
 
       <div className="mt-6 grid gap-6 sm:grid-cols-3">
         <div className="rounded-2xl bg-navy p-6 text-white">

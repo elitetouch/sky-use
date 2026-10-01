@@ -11,6 +11,7 @@ export type Address = {
   postal_code: string | null;
   country: string;
   is_default: boolean;
+  nin_verified?: boolean;
   created_at: string;
   updated_at: string;
 };

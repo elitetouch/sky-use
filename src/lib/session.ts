@@ -41,6 +41,7 @@ export type SessionUser = {
   permissions?: string[];
   two_factor_enabled?: boolean;
   two_factor_method?: "totp" | "email" | null;
+  nin_verified?: boolean;
 };
 
 /** Whether the user holds a given permission (admins hold all). */

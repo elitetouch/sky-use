@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { NinVerify } from "@/components/identity/NinVerify";
+import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
 import type { Address } from "@/lib/types";
 
 type FormState = {
@@ -212,6 +214,18 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
                 </p>
               </div>
             </div>
+            <div className="mt-4 border-t border-black/5 pt-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-body">Identity (NIN)</p>
+                {address.nin_verified ? <VerifiedBadge /> : null}
+              </div>
+              {!address.nin_verified ? (
+                <div className="mt-2">
+                  <NinVerify addressId={address.id} refreshOnVerify />
+                </div>
+              ) : null}
+            </div>
+
             <div className="mt-4 flex gap-4 text-sm font-semibold">
               <button onClick={() => startEdit(address)} className="text-navy hover:text-red">
                 Edit
