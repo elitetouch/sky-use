@@ -6,17 +6,17 @@ import { Button } from "@/components/ui/Button";
 import type { Address } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 
-type Item = { description: string; quantity: string; value: string };
+type Item = { description: string; quantity: string; weight: string; value: string };
 type UploadedFile = { path: string; url: string; name: string };
-type ProofSlot = "parcelItems" | "proofOfPurchase" | "proofOfWeight";
+type ProofSlot = "parcelItems" | "proofOfPurchase";
 type Parcel = {
   type: string;
   length: string;
   width: string;
   height: string;
+  items: Item[];
   parcelItems?: UploadedFile;
   proofOfPurchase?: UploadedFile;
-  proofOfWeight?: UploadedFile;
 };
 type AddressForm = {
   label: string;
@@ -43,14 +43,12 @@ type ServiceRate = {
 
 const STEPS = ["Sender", "Receiver", "Items", "Service", "Review"] as const;
 const PURPOSES = ["Personal", "Commercial", "Gift", "Sample", "Return"] as const;
-const CURRENCIES = ["NGN", "USD", "GBP", "EUR"] as const;
 const PARCEL_TYPES = ["Box", "Envelope", "Soft Packaging"] as const;
 const VOLUMETRIC_DIVISOR = 5000;
 
 const PROOF_SLOTS: { key: ProofSlot; label: string }[] = [
   { key: "parcelItems", label: "Parcel Items" },
   { key: "proofOfPurchase", label: "Proof of Purchase" },
-  { key: "proofOfWeight", label: "Proof of Weight" },
 ];
 
 // How-to content shown in the "View Sample" popup for each upload slot.
@@ -70,19 +68,10 @@ const PROOF_SAMPLES: Record<ProofSlot, { title: string; steps: string[] }> = {
       "Upload an image (JPG or PNG) under 1MB.",
     ],
   },
-  proofOfWeight: {
-    title: "Proof of Weight: How to upload",
-    steps: [
-      "Pack all items into a single carton or flyer, then seal it.",
-      "Weigh the sealed parcel on a scale or measure it with a tape.",
-      "Take a picture showing the weight or dimensions.",
-      "Upload an image (JPG or PNG) under 1MB.",
-    ],
-  },
 };
 
-const EMPTY_ITEM: Item = { description: "", quantity: "1", value: "" };
-const emptyParcel = (): Parcel => ({ type: "Box", length: "", width: "", height: "" });
+const EMPTY_ITEM: Item = { description: "", quantity: "1", weight: "", value: "" };
+const emptyParcel = (): Parcel => ({ type: "Box", length: "", width: "", height: "", items: [{ ...EMPTY_ITEM }] });
 const emptyAddress = (country = ""): AddressForm => ({
   label: "",
   contact_name: "",
@@ -117,7 +106,7 @@ function asItems(v: unknown): Item[] {
   if (!Array.isArray(v)) return [{ ...EMPTY_ITEM }];
   const items = v.map((x) => {
     const r = asRecord(x);
-    return { description: asStr(r.description), quantity: asStr(r.quantity, "1"), value: asStr(r.value) };
+    return { description: asStr(r.description), quantity: asStr(r.quantity, "1"), weight: asStr(r.weight), value: asStr(r.value) };
   });
   return items.length > 0 ? items : [{ ...EMPTY_ITEM }];
 }
@@ -137,9 +126,9 @@ function asParcels(v: unknown): Parcel[] {
       length: asStr(r.length),
       width: asStr(r.width),
       height: asStr(r.height),
+      items: asItems(r.items),
       parcelItems: asUpload(r.parcelItems),
       proofOfPurchase: asUpload(r.proofOfPurchase),
-      proofOfWeight: asUpload(r.proofOfWeight),
     };
   });
   return parcels.length > 0 ? parcels : [emptyParcel()];
@@ -162,9 +151,11 @@ function asAddress(v: unknown, country: string): AddressForm {
 }
 
 const inputClass =
-  "mt-1.5 w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
+  "mt-1.5 w-full rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
 const smallInput =
-  "w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy";
+  "w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-navy outline-none focus:border-navy";
+// Brand-tinted panel (a soft navy wash) used for the step-2 section cards.
+const panelClass = "rounded-2xl border border-navy/10 bg-navy/[0.03] p-4 sm:p-5";
 const fieldLabel = "mb-1 block text-sm font-medium text-navy";
 const optionalHint = <span className="font-normal text-body"> (optional)</span>;
 const requiredMark = <span className="text-red"> *</span>;
@@ -210,10 +201,8 @@ export function BookShipmentForm({
   const [receiverNew, setReceiverNew] = useState<AddressForm>(asAddress(d.receiverNew, ""));
 
   const [purpose, setPurpose] = useState<string>(asStr(d.purpose, "Personal"));
-  const [currency, setCurrency] = useState<string>(asStr(d.currency, "NGN"));
+  const currency = asStr(d.currency, "NGN") || "NGN";
   const [parcels, setParcels] = useState<Parcel[]>(asParcels(d.parcels));
-  const [declaredWeight, setDeclaredWeight] = useState(asStr(d.declaredWeight, "1"));
-  const [items, setItems] = useState<Item[]>(asItems(d.items));
 
   const [rates, setRates] = useState<ServiceRate[]>([]);
   const [selected, setSelected] = useState<ServiceRate | null>(null);
@@ -269,11 +258,24 @@ export function BookShipmentForm({
     });
   }
 
-  const filledItems = items.filter((i) => i.description.trim() !== "");
+  const parcelWeight = (p: Parcel) => Math.round(p.items.reduce((s, it) => s + num(it.weight), 0) * 100) / 100;
+  const parcelValue = (p: Parcel) => p.items.reduce((s, it) => s + num(it.value), 0);
+  const parcelFilledItems = (p: Parcel) => p.items.filter((it) => it.description.trim() !== "");
+  const allFilledItems = parcels.flatMap(parcelFilledItems);
   const totalVolumetric = Math.round(parcels.reduce((s, p) => s + parcelVolumetric(p), 0) * 100) / 100;
-  const declared = num(declaredWeight);
-  const billable = Math.max(declared, totalVolumetric);
-  const volumetricDrives = totalVolumetric > declared && totalVolumetric > 0;
+  const totalDeclared = Math.round(parcels.reduce((s, p) => s + parcelWeight(p), 0) * 100) / 100;
+  const billable = Math.max(totalDeclared, totalVolumetric);
+  const volumetricDrives = totalVolumetric > totalDeclared && totalVolumetric > 0;
+
+  function setItemField(pi: number, ii: number, patch: Partial<Item>) {
+    setParcels((prev) => prev.map((p, i) => (i === pi ? { ...p, items: p.items.map((it, j) => (j === ii ? { ...it, ...patch } : it)) } : p)));
+  }
+  function addItem(pi: number) {
+    setParcels((prev) => prev.map((p, i) => (i === pi ? { ...p, items: [...p.items, { ...EMPTY_ITEM }] } : p)));
+  }
+  function removeItem(pi: number, ii: number) {
+    setParcels((prev) => prev.map((p, i) => (i === pi ? { ...p, items: p.items.length === 1 ? p.items : p.items.filter((_, j) => j !== ii) } : p)));
+  }
 
   function receiverCountry(): string {
     return receiverMode === "saved" ? addresses.find((a) => a.id === receiverId)?.country ?? "" : receiverNew.country;
@@ -341,27 +343,31 @@ export function BookShipmentForm({
 
     if (step === 2) {
       const keys: string[] = [];
-      if (declared <= 0) keys.push("weight");
       parcels.forEach((p, i) => {
         if (num(p.length) <= 0) keys.push(`parcel.${i}.length`);
         if (num(p.width) <= 0) keys.push(`parcel.${i}.width`);
         if (num(p.height) <= 0) keys.push(`parcel.${i}.height`);
+
+        // Each parcel needs at least one item with a name and a weight.
+        const complete = p.items.filter((it) => it.description.trim() !== "" && num(it.weight) > 0);
+        if (complete.length === 0) keys.push(`parcel.${i}.items`);
+
+        // Highlight rows the customer started but left incomplete.
+        p.items.forEach((it, j) => {
+          const started = it.description.trim() !== "" || num(it.weight) > 0 || num(it.value) > 0;
+          if (!started) return;
+          if (it.description.trim() === "") keys.push(`parcel.${i}.item.${j}.description`);
+          if (num(it.weight) <= 0) keys.push(`parcel.${i}.item.${j}.weight`);
+        });
       });
-      // Any item that has a quantity/value but no description is incomplete.
-      items.forEach((it, i) => {
-        const hasDetail = it.value.trim() !== "" || (it.quantity.trim() !== "" && it.quantity.trim() !== "1");
-        if (hasDetail && it.description.trim() === "") keys.push(`item.${i}.description`);
-      });
+
       if (keys.length > 0) {
         setInvalid(new Set(keys));
-        const onlyWeight = keys.length === 1 && keys[0] === "weight";
-        const itemIssue = keys.some((k) => k.startsWith("item."));
+        const dimIssue = keys.some((k) => /\.(length|width|height)$/.test(k));
         setError(
-          onlyWeight
-            ? "Enter the declared weight (kg)."
-            : itemIssue && keys.every((k) => k.startsWith("item."))
-              ? "Add a name for each item you've listed, or remove it."
-              : "Enter the declared weight and every parcel's length, width and height.",
+          dimIssue
+            ? "Enter every parcel's length, width and height."
+            : "Add at least one item with a name and weight to each parcel.",
         );
         return;
       }
@@ -437,8 +443,6 @@ export function BookShipmentForm({
       purpose,
       currency,
       parcels,
-      declaredWeight,
-      items,
     };
   }
 
@@ -493,9 +497,14 @@ export function BookShipmentForm({
             volumetric_kg: parcelVolumetric(p),
             parcel_items_file: p.parcelItems?.path,
             proof_of_purchase_file: p.proofOfPurchase?.path,
-            proof_of_weight_file: p.proofOfWeight?.path,
+            items: parcelFilledItems(p).map((it) => ({
+              description: it.description.trim(),
+              quantity: num(it.quantity) || 1,
+              weight_kg: num(it.weight) || undefined,
+              value: num(it.value) || undefined,
+            })),
           })),
-          items: filledItems.map((it) => {
+          items: allFilledItems.map((it) => {
             const qty = Number(it.quantity);
             const label = qty > 1 ? `${it.description.trim()} ×${qty}` : it.description.trim();
             const value = Number(it.value);
@@ -558,33 +567,22 @@ export function BookShipmentForm({
 
         {step === 2 ? (
           <div className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-semibold text-navy">Purpose of shipping</label>
-                <select value={purpose} onChange={(e) => setPurpose(e.target.value)} className={inputClass}>
-                  {PURPOSES.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-navy">Currency</label>
-                <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={inputClass}>
-                  {CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className={panelClass}>
+              <label className="block text-sm font-semibold text-navy">Purpose of shipping</label>
+              <select value={purpose} onChange={(e) => setPurpose(e.target.value)} className={`${inputClass} sm:max-w-sm`}>
+                {PURPOSES.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs text-body">Tell us the purpose of the items in your shipment.</p>
             </div>
 
-            {/* Parcels */}
+            {/* Parcels — each holds its own dimensions, items and uploads */}
             <div className="space-y-3">
               {parcels.map((p, i) => (
-                <div key={i} className="rounded-xl border border-black/10 p-4">
+                <div key={i} className={panelClass}>
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-navy">Parcel {i + 1}</p>
                     <div className="flex items-center gap-3">
@@ -623,7 +621,44 @@ export function BookShipmentForm({
                     </label>
                   </div>
 
-                  <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                  {/* Items inside this parcel */}
+                  <div className="mt-4 rounded-xl border border-black/10 bg-white p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-navy">Items{requiredMark}</p>
+                      <button type="button" onClick={() => addItem(i)} className="text-xs font-semibold text-navy hover:text-red">
+                        + Add item
+                      </button>
+                    </div>
+                    <div className="mt-2 grid grid-cols-12 gap-2 px-1">
+                      <span className={`col-span-5 ${fieldLabel} mb-0`}>Item</span>
+                      <span className={`col-span-2 ${fieldLabel} mb-0`}>Qty</span>
+                      <span className={`col-span-2 ${fieldLabel} mb-0`}>Weight (kg)</span>
+                      <span className={`col-span-2 ${fieldLabel} mb-0`}>Value ({currency})</span>
+                      <span className="col-span-1" />
+                    </div>
+                    <div className="mt-1 space-y-2">
+                      {p.items.map((item, j) => (
+                        <div key={j} className="grid grid-cols-12 items-center gap-2">
+                          <input value={item.description} onChange={(e) => { setItemField(i, j, { description: e.target.value }); clearInvalid(`parcel.${i}.item.${j}.description`); clearInvalid(`parcel.${i}.items`); }} placeholder="e.g. Shoes" className={`col-span-5 ${smallInput} ${invalid.has(`parcel.${i}.item.${j}.description`) ? errorBorder : ""}`} />
+                          <input type="number" min="1" value={item.quantity} onChange={(e) => setItemField(i, j, { quantity: e.target.value })} placeholder="1" className={`col-span-2 ${smallInput}`} />
+                          <input type="number" min="0" step="0.1" value={item.weight} onChange={(e) => { setItemField(i, j, { weight: e.target.value }); clearInvalid(`parcel.${i}.item.${j}.weight`); clearInvalid(`parcel.${i}.items`); }} placeholder="0" className={`col-span-2 ${smallInput} ${invalid.has(`parcel.${i}.item.${j}.weight`) ? errorBorder : ""}`} />
+                          <input type="number" min="0" value={item.value} onChange={(e) => setItemField(i, j, { value: e.target.value })} placeholder="0" className={`col-span-2 ${smallInput}`} />
+                          <button type="button" onClick={() => removeItem(i, j)} className="col-span-1 text-red hover:text-red/70" aria-label="Remove item">
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs text-body">
+                      Parcel weight: <strong className="text-navy">{parcelWeight(p)}kg</strong> · Value:{" "}
+                      <strong className="text-navy">{formatNaira(Math.round(parcelValue(p) * 100))}</strong>
+                    </p>
+                    {invalid.has(`parcel.${i}.items`) ? (
+                      <p className="mt-1 text-xs text-red">Add at least one item with a name and weight.</p>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     {PROOF_SLOTS.map((slot) => (
                       <ProofUpload
                         key={slot.key}
@@ -643,44 +678,10 @@ export function BookShipmentForm({
               </button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-semibold text-navy">Declared weight (kg){requiredMark}</label>
-                <input type="number" min="0.1" step="0.1" value={declaredWeight} onChange={(e) => { setDeclaredWeight(e.target.value); clearInvalid("weight"); }} className={`${inputClass} ${invalid.has("weight") ? errorBorder : ""}`} />
-                <p className="mt-1 text-xs text-body">
-                  Billable weight: <strong>{billable}kg</strong>
-                  {volumetricDrives ? " (volumetric applies)" : ""}
-                </p>
-              </div>
-            </div>
-
-            {/* Items */}
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-semibold text-navy">What&apos;s inside? (optional)</label>
-                <button type="button" onClick={() => setItems((p) => [...p, { ...EMPTY_ITEM }])} className="text-xs font-semibold text-navy hover:text-red">
-                  + Add item
-                </button>
-              </div>
-              <div className="mt-2 grid grid-cols-12 gap-2 px-1">
-                <span className={`col-span-6 ${fieldLabel} mb-0`}>Item</span>
-                <span className={`col-span-2 ${fieldLabel} mb-0`}>Qty</span>
-                <span className={`col-span-3 ${fieldLabel} mb-0`}>Value ({currency})</span>
-                <span className="col-span-1" />
-              </div>
-              <div className="mt-1 space-y-2">
-                {items.map((item, i) => (
-                  <div key={i} className="grid grid-cols-12 items-center gap-2">
-                    <input value={item.description} onChange={(e) => { const v = e.target.value; setItems((p) => p.map((x, idx) => (idx === i ? { ...x, description: v } : x))); clearInvalid(`item.${i}.description`); }} placeholder="e.g. Shoes" className={`col-span-6 ${smallInput} ${invalid.has(`item.${i}.description`) ? errorBorder : ""}`} />
-                    <input type="number" min="1" value={item.quantity} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, quantity: e.target.value } : x)))} placeholder="1" className={`col-span-2 ${smallInput}`} />
-                    <input type="number" min="0" value={item.value} onChange={(e) => setItems((p) => p.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))} placeholder="0" className={`col-span-3 ${smallInput}`} />
-                    <button type="button" onClick={() => setItems((p) => (p.length === 1 ? p : p.filter((_, idx) => idx !== i)))} className="col-span-1 text-red hover:text-red/70" aria-label="Remove item">
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <p className="text-sm text-body">
+              Billable weight: <strong className="text-navy">{billable}kg</strong>
+              {volumetricDrives ? " (volumetric applies)" : ""}
+            </p>
           </div>
         ) : null}
 
@@ -688,7 +689,7 @@ export function BookShipmentForm({
           <div className="space-y-3">
             {volumetricDrives ? (
               <div className="rounded-xl bg-green-50 p-3 text-sm text-green-800">
-                Rates are based on your volumetric weight ({totalVolumetric}kg), as it exceeds your declared weight ({declared}kg).
+                Rates are based on your volumetric weight ({totalVolumetric}kg), as it exceeds your declared weight ({totalDeclared}kg).
               </div>
             ) : null}
             {ratesLoading ? (
@@ -750,7 +751,7 @@ export function BookShipmentForm({
               </p>
               <p className="mt-1 text-body">
                 {parcels.length} parcel{parcels.length > 1 ? "s" : ""}
-                {filledItems.length > 0 ? ` · ${filledItems.length} item${filledItems.length > 1 ? "s" : ""}` : ""}
+                {allFilledItems.length > 0 ? ` · ${allFilledItems.length} item${allFilledItems.length > 1 ? "s" : ""}` : ""}
               </p>
             </div>
 
@@ -1013,7 +1014,6 @@ function SampleModal({ slot, onClose }: { slot: ProofSlot; onClose: () => void }
 const SAMPLE_IMAGES: Record<ProofSlot, string> = {
   parcelItems: "/samples/parcel-items.jpg",
   proofOfPurchase: "/samples/proof-of-purchase.jpg",
-  proofOfWeight: "/samples/proof-of-weight.jpg",
 };
 
 function ProofSampleArt({ slot }: { slot: ProofSlot }) {
@@ -1034,19 +1034,6 @@ function ProofSampleArt({ slot }: { slot: ProofSlot }) {
 
 /** Built-in illustration used until a real sample photo is added. */
 function ProofSampleFallback({ slot }: { slot: ProofSlot }) {
-  if (slot === "proofOfWeight") {
-    return (
-      <svg viewBox="0 0 200 140" className="h-32 w-auto" role="img" aria-label="Sealed box on a weighing scale">
-        <rect x="55" y="18" width="90" height="60" rx="4" fill="#d9a566" stroke="#a9772f" strokeWidth="2" />
-        <path d="M55 40 h90" stroke="#a9772f" strokeWidth="2" />
-        <path d="M100 18 v22" stroke="#a9772f" strokeWidth="2" />
-        <rect x="40" y="86" width="120" height="30" rx="4" fill="#3b3b46" />
-        <rect x="52" y="94" width="34" height="14" rx="2" fill="#29abe2" />
-        <rect x="150" y="116" width="8" height="10" fill="#3b3b46" />
-        <rect x="42" y="116" width="8" height="10" fill="#3b3b46" />
-      </svg>
-    );
-  }
   if (slot === "proofOfPurchase") {
     return (
       <svg viewBox="0 0 200 140" className="h-32 w-auto" role="img" aria-label="Shopping receipts">
