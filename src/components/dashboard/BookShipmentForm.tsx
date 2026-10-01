@@ -626,7 +626,7 @@ export function BookShipmentForm({
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold text-navy">Items{requiredMark}</p>
                       <button type="button" onClick={() => addItem(i)} className="text-xs font-semibold text-navy hover:text-red">
-                        + Add item
+                        + Add new item
                       </button>
                     </div>
                     <div className="mt-2 grid grid-cols-12 gap-2 px-1">
@@ -674,7 +674,7 @@ export function BookShipmentForm({
                 </div>
               ))}
               <button type="button" onClick={() => setParcels((prev) => [...prev, emptyParcel()])} className="text-sm font-semibold text-navy hover:text-red">
-                + Add parcel
+                + Add new parcel
               </button>
             </div>
 
