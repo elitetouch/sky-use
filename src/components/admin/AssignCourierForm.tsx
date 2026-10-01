@@ -9,7 +9,12 @@ const COURIERS = [
   { value: "dhl", label: "DHL Express" },
   { value: "ups", label: "UPS" },
   { value: "terminal", label: "Terminal (DHL · UPS · FedEx)" },
+  { value: "air_cargo", label: "Air Cargo" },
+  { value: "sea_cargo", label: "Sea Cargo" },
 ];
+
+// Only these couriers carry an external waybill; the rest are tracked in-house.
+const TRACKED_COURIERS = ["dhl", "ups", "terminal"];
 
 export function AssignCourierForm({
   shipmentId,
@@ -72,7 +77,7 @@ export function AssignCourierForm({
         ))}
       </select>
 
-      {courier !== "internal" ? (
+      {TRACKED_COURIERS.includes(courier) ? (
         <div className="space-y-2">
           {trackingNumbers.map((tn, i) => (
             <div key={i} className="flex items-center gap-2">

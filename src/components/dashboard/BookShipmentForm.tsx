@@ -666,15 +666,21 @@ export function BookShipmentForm({
                   </div>
                 </div>
               ))}
-              <button type="button" onClick={() => setParcels((prev) => [...prev, emptyParcel()])} className="text-sm font-semibold text-navy hover:text-red">
-                + Add new parcel
-              </button>
             </div>
 
-            <p className="text-sm text-body">
-              Billable weight: <strong className="text-navy">{billable}kg</strong>
-              {volumetricDrives ? " (volumetric applies)" : ""}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setParcels((prev) => [...prev, emptyParcel()])}
+                className="inline-flex items-center gap-2 rounded-xl border border-dashed border-navy/40 px-4 py-2.5 text-sm font-semibold text-navy transition-colors hover:border-navy hover:bg-navy/[0.03]"
+              >
+                <span aria-hidden className="text-base leading-none">+</span> Click to add new parcel
+              </button>
+              <p className="text-sm text-body">
+                Billable weight: <strong className="text-navy">{billable}kg</strong>
+                {volumetricDrives ? " (volumetric applies)" : ""}
+              </p>
+            </div>
           </div>
         ) : null}
 
