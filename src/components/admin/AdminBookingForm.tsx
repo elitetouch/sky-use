@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AddressFieldset, EMPTY_ADDRESS, type AddressForm } from "@/components/admin/AddressFieldset";
-import type { Office, User } from "@/lib/types";
+import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
+import type { Address, Office, User } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { SERVICE_OPTIONS, DEFAULT_SERVICE } from "@/lib/services";
 import { DELIVERY_WINDOWS, formatEstimatedDelivery } from "@/lib/delivery";
@@ -21,6 +22,22 @@ const inputClass =
 function toNumber(value: string): number {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+/** Map a saved Address record onto the admin booking address-form shape. */
+function addressToForm(a: Address): AddressForm {
+  return {
+    label: a.label ?? "",
+    contact_name: a.contact_name ?? "",
+    phone: a.phone ?? "",
+    email: a.email ?? "",
+    line1: a.line1 ?? "",
+    line2: a.line2 ?? "",
+    city: a.city ?? "",
+    state: a.state ?? "",
+    postal_code: a.postal_code ?? "",
+    country: a.country ?? "",
+  };
 }
 
 export function AdminBookingForm({
@@ -44,6 +61,49 @@ export function AdminBookingForm({
   const [sender, setSender] = useState<AddressForm>(EMPTY_ADDRESS);
   // Receivers are often international — don't presume a destination country.
   const [receiver, setReceiver] = useState<AddressForm>({ ...EMPTY_ADDRESS, country: "" });
+
+  // For an existing customer: their saved addresses (to pick a sender) and the
+  // receivers that sender has shipped to before (to reuse without retyping).
+  const [customerAddresses, setCustomerAddresses] = useState<Address[]>([]);
+  const [selectedSenderId, setSelectedSenderId] = useState<string | null>(null);
+  const [receiverSuggestions, setReceiverSuggestions] = useState<Address[]>([]);
+
+  // Load the selected existing customer's saved addresses (for sender picking).
+  useEffect(() => {
+    if (customerMode !== "existing" || !selectedCustomer) {
+      setCustomerAddresses([]);
+      setSelectedSenderId(null);
+      setReceiverSuggestions([]);
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/admin/customers/${selectedCustomer.id}/addresses`);
+        const json = await res.json();
+        if (active) setCustomerAddresses(res.ok ? json.data ?? [] : []);
+      } catch {
+        if (active) setCustomerAddresses([]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [selectedCustomer, customerMode]);
+
+  async function pickSender(a: Address) {
+    setSender(addressToForm(a));
+    setSelectedSenderId(a.id);
+    setReceiverSuggestions([]);
+    if (!selectedCustomer) return;
+    try {
+      const res = await fetch(`/api/admin/customers/${selectedCustomer.id}/receivers?sender_address_id=${a.id}`);
+      const json = await res.json();
+      if (res.ok) setReceiverSuggestions(json.data ?? []);
+    } catch {
+      // Non-fatal — the admin can still type the receiver manually.
+    }
+  }
 
   const [serviceLevel, setServiceLevel] = useState<string>(DEFAULT_SERVICE);
   const [carrier, setCarrier] = useState("");
@@ -462,7 +522,56 @@ export function AdminBookingForm({
         )}
       </div>
 
+      {customerAddresses.length > 0 ? (
+        <div className="rounded-xl border border-black/5 bg-navy/[0.02] p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-body">Saved senders for this customer</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {customerAddresses.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => pickSender(a)}
+                className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
+                  selectedSenderId === a.id ? "border-navy bg-navy/[0.04]" : "border-black/10 hover:border-navy/40"
+                }`}
+              >
+                <span className="flex items-center gap-1 font-semibold text-navy">
+                  {a.contact_name}
+                  {a.nin_verified ? <VerifiedBadge label="Verified" className="scale-90" /> : null}
+                </span>
+                <span className="block text-body">{[a.city, a.state, a.country].filter(Boolean).join(", ")}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-body">Pick a sender to reuse it, or fill the form below for a new one.</p>
+        </div>
+      ) : null}
+
       <AddressFieldset title="Sender" value={sender} onChange={setSender} />
+
+      {receiverSuggestions.length > 0 ? (
+        <div className="rounded-xl border border-black/5 bg-navy/[0.02] p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-body">Recent receivers for this sender</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {receiverSuggestions.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setReceiver(addressToForm(a))}
+                className="rounded-lg border border-black/10 px-3 py-2 text-left text-xs transition-colors hover:border-navy/40"
+              >
+                <span className="flex items-center gap-1 font-semibold text-navy">
+                  {a.contact_name}
+                  {a.nin_verified ? <VerifiedBadge label="Verified" className="scale-90" /> : null}
+                </span>
+                <span className="block text-body">{[a.city, a.state, a.country].filter(Boolean).join(", ")}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-body">Pick one to reuse, or fill the form below to add a new receiver.</p>
+        </div>
+      ) : null}
+
       <AddressFieldset title="Receiver" value={receiver} onChange={setReceiver} />
 
       <div className="rounded-2xl border border-black/5 p-6">
