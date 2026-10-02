@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { countryCode } from "@/lib/countries";
-import { isGoogleMapsConfigured, loadGoogleMaps } from "@/lib/googleMaps";
+import { isGoogleMapsConfigured } from "@/lib/googleMaps";
+import { usePlacesAutocomplete } from "@/lib/usePlacesAutocomplete";
 
 export type AddressForm = {
   label: string;
@@ -30,36 +31,6 @@ export const EMPTY_ADDRESS: AddressForm = {
   country: "Nigeria",
 };
 
-function componentValue(
-  components: google.maps.GeocoderAddressComponent[],
-  type: string,
-): string {
-  return components.find((c) => c.types.includes(type))?.long_name ?? "";
-}
-
-function parsePlace(place: google.maps.places.PlaceResult): Partial<AddressForm> {
-  const components = place.address_components ?? [];
-
-  const streetNumber = componentValue(components, "street_number");
-  const route = componentValue(components, "route");
-  const line1 = [streetNumber, route].filter(Boolean).join(" ") || place.name || "";
-
-  const city =
-    componentValue(components, "locality") ||
-    componentValue(components, "postal_town") ||
-    componentValue(components, "administrative_area_level_2");
-
-  const state = componentValue(components, "administrative_area_level_1");
-  const country = componentValue(components, "country");
-
-  const parsed: Partial<AddressForm> = { line1 };
-  if (city) parsed.city = city;
-  if (state) parsed.state = state;
-  if (country) parsed.country = country;
-
-  return parsed;
-}
-
 export function AddressFieldset({
   title,
   value,
@@ -70,74 +41,26 @@ export function AddressFieldset({
   onChange: (next: AddressForm) => void;
 }) {
   const line1Ref = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  // Keep the latest value/onChange available to the place_changed listener,
-  // which is registered once but must always merge against current state.
+  // Keep the latest value available to the (stable) onPick callback so a picked
+  // address merges against current state instead of a stale snapshot.
   const valueRef = useRef(value);
-  const onChangeRef = useRef(onChange);
   useEffect(() => {
     valueRef.current = value;
-    onChangeRef.current = onChange;
   });
 
-  useEffect(() => {
-    if (!isGoogleMapsConfigured() || !line1Ref.current) {
-      return;
-    }
-
-    let listener: google.maps.MapsEventListener | null = null;
-    let cancelled = false;
-
-    loadGoogleMaps()
-      .then((google) => {
-        if (cancelled || !line1Ref.current) {
-          return;
-        }
-
-        const initialCountry = countryCode(valueRef.current.country);
-
-        const autocomplete = new google.maps.places.Autocomplete(line1Ref.current, {
-          fields: ["address_components", "name"],
-          types: ["address"],
-          componentRestrictions: initialCountry ? { country: initialCountry } : undefined,
-        });
-
-        autocompleteRef.current = autocomplete;
-
-        listener = autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          const parsed = parsePlace(place);
-
-          if (!parsed.line1) {
-            return;
-          }
-
-          onChangeRef.current({ ...valueRef.current, ...parsed });
-        });
-      })
-      .catch(() => {
-        // No key or load failure — the plain input keeps working.
-      });
-
-    return () => {
-      cancelled = true;
-      if (listener) {
-        listener.remove();
-      }
-      autocompleteRef.current = null;
-    };
-  }, []);
-
-  // Re-restrict suggestions whenever the selected country changes.
-  const restrictionCode = countryCode(value.country);
-  useEffect(() => {
-    if (autocompleteRef.current) {
-      autocompleteRef.current.setComponentRestrictions(
-        restrictionCode ? { country: restrictionCode } : null,
-      );
-    }
-  }, [restrictionCode]);
+  usePlacesAutocomplete(
+    line1Ref,
+    (parsed) => {
+      const next: AddressForm = { ...valueRef.current, line1: parsed.line1 };
+      if (parsed.city) next.city = parsed.city;
+      if (parsed.state) next.state = parsed.state;
+      if (parsed.postal_code) next.postal_code = parsed.postal_code;
+      if (parsed.country) next.country = parsed.country;
+      onChange(next);
+    },
+    { country: countryCode(value.country) },
+  );
 
   function update(field: keyof AddressForm) {
     return (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...value, [field]: e.target.value });

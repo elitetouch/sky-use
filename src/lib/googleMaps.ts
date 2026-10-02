@@ -48,6 +48,34 @@ export function parsePlaceAddress(place: google.maps.places.PlaceResult): Parsed
   return parsed;
 }
 
+/**
+ * Map the new Places API `AddressComponent[]` (longText/shortText/types) onto
+ * our address-field shape. Falls back to `fallback` (e.g. the formatted address
+ * or the prediction text) for line1 when there's no street number + route, so a
+ * picked city/landmark still leaves a sensible value in the line-1 field.
+ */
+export function parseAddressComponents(
+  components: readonly google.maps.places.AddressComponent[],
+  fallback?: string,
+): ParsedAddress {
+  const get = (type: string) => components.find((c) => c.types.includes(type))?.longText ?? "";
+
+  const line1 = [get("street_number"), get("route")].filter(Boolean).join(" ") || (fallback ?? "");
+  const city =
+    get("locality") || get("postal_town") || get("administrative_area_level_2");
+
+  const parsed: ParsedAddress = { line1 };
+  if (city) parsed.city = city;
+  const state = get("administrative_area_level_1");
+  if (state) parsed.state = state;
+  const postal = get("postal_code");
+  if (postal) parsed.postal_code = postal;
+  const country = get("country");
+  if (country) parsed.country = country;
+
+  return parsed;
+}
+
 export function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("Google Maps can only load in the browser."));
