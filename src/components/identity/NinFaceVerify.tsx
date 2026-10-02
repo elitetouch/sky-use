@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { VerifiedBadge } from "./VerifiedBadge";
 
 /**
@@ -164,6 +165,14 @@ export function NinFaceVerify({
       >
         {busy ? "Verifying…" : "Verify identity"}
       </button>
+
+      <p className="mt-2 text-xs text-body">
+        Wrong name on your account?{" "}
+        <Link href="/dashboard/profile" className="font-semibold text-navy hover:text-red">
+          Edit your profile
+        </Link>{" "}
+        before verifying — your name is locked afterwards.
+      </p>
     </div>
   );
 }
