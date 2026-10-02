@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/session";
 import { TwoFactorSettings } from "@/components/dashboard/TwoFactorSettings";
-import { NinVerify } from "@/components/identity/NinVerify";
+import { NinFaceVerify } from "@/components/identity/NinFaceVerify";
 import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
 
 export const metadata: Metadata = {
@@ -24,11 +24,11 @@ export default async function SecurityPage() {
         <p className="mt-1 text-sm text-body">
           {user?.nin_verified
             ? "Your National Identification Number has been verified."
-            : "Verify your National Identification Number to secure your account."}
+            : "Verify your NIN with a live photo. This is required before you can book a shipment."}
         </p>
         {!user?.nin_verified ? (
           <div className="mt-4">
-            <NinVerify refreshOnVerify />
+            <NinFaceVerify refreshOnVerify />
           </div>
         ) : null}
       </div>

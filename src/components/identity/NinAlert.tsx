@@ -1,6 +1,6 @@
 "use client";
 
-import { NinVerify } from "@/components/identity/NinVerify";
+import { NinFaceVerify } from "@/components/identity/NinFaceVerify";
 
 /** Dashboard banner prompting customers who haven't verified their NIN. */
 export function NinAlert() {
@@ -9,12 +9,12 @@ export function NinAlert() {
       <div className="flex items-start gap-3">
         <span aria-hidden className="mt-0.5 text-lg">⚠️</span>
         <div className="min-w-0">
-          <p className="text-sm font-bold text-navy">Verify your identity (NIN)</p>
+          <p className="text-sm font-bold text-navy">Verify your identity to start shipping</p>
           <p className="mt-1 text-sm text-body">
-            Verify your National Identification Number to secure your account and keep your shipments moving without delays.
+            Verify your NIN with a quick live photo. You&apos;ll need this before you can book a shipment.
           </p>
           <div className="mt-3">
-            <NinVerify refreshOnVerify />
+            <NinFaceVerify refreshOnVerify />
           </div>
         </div>
       </div>
