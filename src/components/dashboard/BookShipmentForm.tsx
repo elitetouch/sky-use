@@ -262,9 +262,7 @@ export function BookShipmentForm({
           city: senderNew.city,
           state: senderNew.state,
           postal_code: senderNew.postal_code || undefined,
-          // The saved-address endpoint expects an ISO-2 code; send it only when
-          // it already is one, otherwise let the API default it (NG).
-          country: senderNew.country.trim().length === 2 ? senderNew.country.trim().toUpperCase() : undefined,
+          country: senderNew.country || undefined,
         }),
       });
       const json = await res.json().catch(() => null);

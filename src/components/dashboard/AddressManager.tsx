@@ -18,6 +18,8 @@ type FormState = {
   line2: string;
   city: string;
   state: string;
+  postal_code: string;
+  country: string;
   is_default: boolean;
 };
 
@@ -29,6 +31,8 @@ const EMPTY_FORM: FormState = {
   line2: "",
   city: "",
   state: "",
+  postal_code: "",
+  country: "Nigeria",
   is_default: false,
 };
 
@@ -48,6 +52,8 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
       line1: parsed.line1,
       city: parsed.city ?? prev.city,
       state: parsed.state ?? prev.state,
+      postal_code: parsed.postal_code ?? prev.postal_code,
+      country: parsed.country ?? prev.country,
     }));
   });
 
@@ -68,6 +74,8 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
       line2: address.line2 ?? "",
       city: address.city,
       state: address.state,
+      postal_code: address.postal_code ?? "",
+      country: address.country ?? "Nigeria",
       is_default: address.is_default,
     });
     setErrors({});
@@ -190,6 +198,22 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
             onChange={update("state")}
             error={errors.state?.[0]}
           />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Postal code (optional)"
+              name="postal_code"
+              value={form.postal_code}
+              onChange={update("postal_code")}
+              error={errors.postal_code?.[0]}
+            />
+            <Field
+              label="Country"
+              name="country"
+              value={form.country}
+              onChange={update("country")}
+              error={errors.country?.[0]}
+            />
+          </div>
 
           <label className="flex items-center gap-2 text-sm text-navy">
             <input type="checkbox" checked={form.is_default} onChange={update("is_default")} />
