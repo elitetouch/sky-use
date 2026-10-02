@@ -855,14 +855,17 @@ export function BookShipmentForm({
             <span />
           )}
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={saveDraft}
-              disabled={savingDraft || isBooking}
-              className="text-sm font-semibold text-navy hover:text-red disabled:opacity-50"
-            >
-              {savingDraft ? "Saving…" : "Save as draft"}
-            </button>
+            {/* Save as draft is hidden on the Sender/Receiver steps. */}
+            {step >= 2 ? (
+              <button
+                type="button"
+                onClick={saveDraft}
+                disabled={savingDraft || isBooking}
+                className="text-sm font-semibold text-navy hover:text-red disabled:opacity-50"
+              >
+                {savingDraft ? "Saving…" : "Save as draft"}
+              </button>
+            ) : null}
             {step < STEPS.length - 1 ? (
               <Button type="button" variant="primary" onClick={next} disabled={ratesLoading}>
                 Continue
