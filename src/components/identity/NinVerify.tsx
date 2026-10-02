@@ -12,11 +12,14 @@ import { VerifiedBadge } from "./VerifiedBadge";
  */
 export function NinVerify({
   addressId,
+  name,
   verified: initialVerified = false,
   refreshOnVerify = false,
   onVerified,
 }: {
   addressId?: string;
+  /** Explicit name to match the NIN against (e.g. the sender's typed name). */
+  name?: string;
   verified?: boolean;
   refreshOnVerify?: boolean;
   onVerified?: (name: string) => void;
@@ -43,7 +46,7 @@ export function NinVerify({
       const res = await fetch("/api/identity/nin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nin: value, address_id: addressId }),
+        body: JSON.stringify({ nin: value, address_id: addressId, name: name || undefined }),
       });
       const json = await res.json();
       if (!res.ok) {

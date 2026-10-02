@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AddressFieldset, EMPTY_ADDRESS, type AddressForm } from "@/components/admin/AddressFieldset";
 import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
+import { NinVerify } from "@/components/identity/NinVerify";
 import type { Address, Office, User } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { SERVICE_OPTIONS, DEFAULT_SERVICE } from "@/lib/services";
@@ -548,6 +549,18 @@ export function AdminBookingForm({
       ) : null}
 
       <AddressFieldset title="Sender" value={sender} onChange={setSender} />
+
+      <div className="rounded-xl border border-black/5 bg-navy/[0.02] p-4">
+        <p className="text-sm font-semibold text-navy">Sender identity (NIN)</p>
+        <p className="mt-1 text-xs text-body">Verify the sender&apos;s NIN — we check it matches the sender&apos;s name above.</p>
+        <div className="mt-2">
+          {sender.contact_name.trim() ? (
+            <NinVerify name={sender.contact_name} />
+          ) : (
+            <p className="text-xs text-body">Enter the sender&apos;s name above to verify their NIN.</p>
+          )}
+        </div>
+      </div>
 
       {receiverSuggestions.length > 0 ? (
         <div className="rounded-xl border border-black/5 bg-navy/[0.02] p-4">
