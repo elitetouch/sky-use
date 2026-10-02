@@ -71,7 +71,8 @@ const PROOF_SAMPLES: Record<ProofSlot, { title: string; steps: string[] }> = {
 };
 
 const EMPTY_ITEM: Item = { description: "", quantity: "1", weight: "", value: "" };
-const emptyParcel = (): Parcel => ({ type: "Box", length: "", width: "", height: "", items: [{ ...EMPTY_ITEM }] });
+// New parcels start with sensible default dimensions (still required/editable).
+const emptyParcel = (): Parcel => ({ type: "Box", length: "10", width: "7", height: "12", items: [{ ...EMPTY_ITEM }] });
 const emptyAddress = (country = ""): AddressForm => ({
   label: "",
   contact_name: "",
