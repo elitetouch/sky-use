@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { Address } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
@@ -180,26 +180,27 @@ function newAddressSummary(a: AddressForm): string {
 }
 
 export function BookShipmentForm({
-  addresses,
   initialDraft,
 }: {
-  addresses: Address[];
   initialDraft?: { id: string; data: Record<string, unknown> } | null;
 }) {
   const router = useRouter();
-  const hasSaved = addresses.length > 0;
   const d = asRecord(initialDraft?.data);
 
   const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
   const [step, setStep] = useState(0);
 
-  const [senderMode, setSenderMode] = useState<Mode>(asMode(d.senderMode, hasSaved ? "saved" : "new"));
-  const [senderId, setSenderId] = useState(asStr(d.senderId) || addresses[0]?.id || "");
+  // Sender is always the customer's own profile address (one address, editable).
+  const [senderMode, setSenderMode] = useState<Mode>("new");
+  const [senderId, setSenderId] = useState("");
   const [senderNew, setSenderNew] = useState<AddressForm>(asAddress(d.senderNew, "Nigeria"));
+  const [profileAddressId, setProfileAddressId] = useState<string | null>(null);
 
-  const [receiverMode, setReceiverMode] = useState<Mode>(asMode(d.receiverMode, hasSaved ? "saved" : "new"));
-  const [receiverId, setReceiverId] = useState(asStr(d.receiverId) || addresses[1]?.id || "");
+  // Receiver can be reused from people the customer has shipped to before.
+  const [receiverMode, setReceiverMode] = useState<Mode>(asMode(d.receiverMode, "saved"));
+  const [receiverId, setReceiverId] = useState(asStr(d.receiverId));
   const [receiverNew, setReceiverNew] = useState<AddressForm>(asAddress(d.receiverNew, ""));
+  const [pastReceivers, setPastReceivers] = useState<Address[]>([]);
 
   const [purpose, setPurpose] = useState<string>(asStr(d.purpose, "Personal"));
   const currency = asStr(d.currency, "NGN") || "NGN";
@@ -216,6 +217,66 @@ export function BookShipmentForm({
   const [draftMsg, setDraftMsg] = useState<string | null>(null);
   const [sample, setSample] = useState<ProofSlot | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
+
+  // Load the customer's profile (sender) address and the receivers they've
+  // shipped to before.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [pRes, rRes] = await Promise.all([fetch("/api/profile/address"), fetch("/api/receivers")]);
+        const pJson = await pRes.json().catch(() => null);
+        const rJson = await rRes.json().catch(() => null);
+        if (!active) return;
+        if (pRes.ok && pJson?.data) {
+          setProfileAddressId(pJson.data.id ?? null);
+          // Prefill the sender form from the profile address, unless a resumed
+          // draft already carries one.
+          setSenderNew((prev) => (prev.contact_name || prev.line1 ? prev : asAddress(pJson.data, "Nigeria")));
+        }
+        if (rRes.ok && Array.isArray(rJson?.data)) setPastReceivers(rJson.data as Address[]);
+      } catch {
+        // Non-fatal — the customer can still fill the forms manually.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Persist the sender form as the customer's single profile address.
+  async function saveProfileAddress(): Promise<boolean> {
+    try {
+      const res = await fetch("/api/profile/address", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          label: senderNew.label || undefined,
+          contact_name: senderNew.contact_name,
+          phone: senderNew.phone,
+          email: senderNew.email || undefined,
+          line1: senderNew.line1,
+          line2: senderNew.line2 || undefined,
+          city: senderNew.city,
+          state: senderNew.state,
+          postal_code: senderNew.postal_code || undefined,
+          // The saved-address endpoint expects an ISO-2 code; send it only when
+          // it already is one, otherwise let the API default it (NG).
+          country: senderNew.country.trim().length === 2 ? senderNew.country.trim().toUpperCase() : undefined,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(json?.message ?? "Couldn't save your address.");
+        return false;
+      }
+      if (json?.data?.id) setProfileAddressId(json.data.id);
+      return true;
+    } catch {
+      setError("Couldn't save your address. Please try again.");
+      return false;
+    }
+  }
 
   async function uploadProof(index: number, slot: ProofSlot, file: File) {
     setError(null);
@@ -279,7 +340,7 @@ export function BookShipmentForm({
   }
 
   function receiverCountry(): string {
-    return receiverMode === "saved" ? addresses.find((a) => a.id === receiverId)?.country ?? "" : receiverNew.country;
+    return receiverMode === "saved" ? pastReceivers.find((a) => a.id === receiverId)?.country ?? "" : receiverNew.country;
   }
   function receiverMode2(): string {
     return receiverCountry().trim().toLowerCase() === "nigeria" ? "local" : "international";
@@ -327,6 +388,9 @@ export function BookShipmentForm({
         setError(result.message);
         return;
       }
+      // Persist (or update) the customer's profile address before moving on.
+      const saved = await saveProfileAddress();
+      if (!saved) return;
     }
 
     if (step === 1) {
@@ -471,7 +535,10 @@ export function BookShipmentForm({
     setError(null);
     setIsBooking(true);
     try {
-      const sender = addressPayload(senderMode, senderId, senderNew);
+      // Sender is the saved profile address (reused, not recreated each time).
+      const sender = profileAddressId
+        ? { address_id: profileAddressId, address: undefined }
+        : addressPayload("new", "", senderNew);
       const receiver = addressPayload(receiverMode, receiverId, receiverNew);
       const response = await fetch("/api/shipments", {
         method: "POST",
@@ -525,13 +592,10 @@ export function BookShipmentForm({
     }
   }
 
-  const senderSummary =
-    senderMode === "saved"
-      ? { name: addresses.find((a) => a.id === senderId)?.contact_name ?? "—", addr: fullAddress(addresses.find((a) => a.id === senderId) ?? ({} as Address)) }
-      : { name: senderNew.contact_name, addr: newAddressSummary(senderNew) };
+  const senderSummary = { name: senderNew.contact_name, addr: newAddressSummary(senderNew) };
   const receiverSummary =
     receiverMode === "saved"
-      ? { name: addresses.find((a) => a.id === receiverId)?.contact_name ?? "—", addr: fullAddress(addresses.find((a) => a.id === receiverId) ?? ({} as Address)) }
+      ? { name: pastReceivers.find((a) => a.id === receiverId)?.contact_name ?? "—", addr: fullAddress(pastReceivers.find((a) => a.id === receiverId) ?? ({} as Address)) }
       : { name: receiverNew.contact_name, addr: newAddressSummary(receiverNew) };
 
   return (
@@ -555,11 +619,17 @@ export function BookShipmentForm({
 
       <div className="rounded-2xl border border-black/5 p-6">
         {step === 0 ? (
-          <AddressSection title="Ship from" prefix="sender" addresses={addresses} mode={senderMode} setMode={setSenderMode} selectedId={senderId} setSelectedId={setSenderId} form={senderNew} setForm={setSenderNew} invalid={invalid} clearInvalid={clearInvalid} />
+          <div>
+            <p className="mb-3 text-sm text-body">
+              This is your address — it&apos;s used as the sender on every shipment and saved to your profile.
+            </p>
+            {/* Sender is always the customer's own profile address (no saved picker). */}
+            <AddressSection title="Your address (sender)" prefix="sender" addresses={[]} mode="new" setMode={setSenderMode} selectedId={senderId} setSelectedId={setSenderId} form={senderNew} setForm={setSenderNew} invalid={invalid} clearInvalid={clearInvalid} />
+          </div>
         ) : null}
 
         {step === 1 ? (
-          <AddressSection title="Ship to" prefix="receiver" addresses={addresses} mode={receiverMode} setMode={setReceiverMode} selectedId={receiverId} setSelectedId={setReceiverId} form={receiverNew} setForm={setReceiverNew} invalid={invalid} clearInvalid={clearInvalid} />
+          <AddressSection title="Ship to" prefix="receiver" savedLabel="Recent recipients" addresses={pastReceivers} mode={receiverMode} setMode={setReceiverMode} selectedId={receiverId} setSelectedId={setReceiverId} form={receiverNew} setForm={setReceiverNew} invalid={invalid} clearInvalid={clearInvalid} />
         ) : null}
 
         {step === 2 ? (
@@ -823,6 +893,7 @@ function AddressSection({
   setForm,
   invalid,
   clearInvalid,
+  savedLabel = "Saved",
 }: {
   title: string;
   prefix: "sender" | "receiver";
@@ -835,6 +906,7 @@ function AddressSection({
   setForm: (updater: (prev: AddressForm) => AddressForm) => void;
   invalid: Set<string>;
   clearInvalid: (key: string) => void;
+  savedLabel?: string;
 }) {
   const hasSaved = addresses.length > 0;
   const set = (field: keyof AddressForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -851,7 +923,7 @@ function AddressSection({
         {hasSaved ? (
           <div className="flex gap-1 rounded-lg bg-black/5 p-0.5 text-xs font-semibold">
             <button type="button" onClick={() => setMode("saved")} className={`rounded-md px-3 py-1 ${mode === "saved" ? "bg-white text-navy shadow-sm" : "text-body"}`}>
-              Saved
+              {savedLabel}
             </button>
             <button type="button" onClick={() => setMode("new")} className={`rounded-md px-3 py-1 ${mode === "new" ? "bg-white text-navy shadow-sm" : "text-body"}`}>
               New address

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { apiFetch } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import type { Address } from "@/lib/types";
 import { BookShipmentForm } from "@/components/dashboard/BookShipmentForm";
 
 export const metadata: Metadata = {
@@ -17,16 +16,10 @@ export default async function NewShipmentPage({
 }) {
   const { draft: draftId } = await searchParams;
   const token = await getSessionToken();
-  // Fetch addresses and the draft (if resuming) in parallel to keep the page
-  // fast on a cold server. Both are best-effort — a failed call falls back so
-  // the page always renders instead of erroring.
-  const [addresses, draft] = await Promise.all([
-    // Addresses are optional now — first-time users can type them inline.
-    apiFetch<Address[]>("/addresses", { token: token! }).catch(() => [] as Address[]),
-    draftId
-      ? apiFetch<Draft>(`/shipment-drafts/${draftId}`, { token: token! }).catch(() => null)
-      : Promise.resolve(null),
-  ]);
+  // The form loads the profile (sender) address and past receivers itself.
+  const draft = draftId
+    ? await apiFetch<Draft>(`/shipment-drafts/${draftId}`, { token: token! }).catch(() => null)
+    : null;
 
   return (
     <div>
@@ -36,7 +29,7 @@ export default async function NewShipmentPage({
       </p>
 
       <div className="mt-6 max-w-4xl">
-        <BookShipmentForm addresses={addresses} initialDraft={draft} />
+        <BookShipmentForm initialDraft={draft} />
       </div>
     </div>
   );
