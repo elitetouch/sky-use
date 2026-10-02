@@ -59,15 +59,29 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     return null;
   }
 
-  try {
-    return await apiFetch<SessionUser>("/profile", { token });
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      return null;
-    }
+  // One retry so a transient /profile hiccup (timeout, cold start, a brief 5xx
+  // under load — common right after a deploy) doesn't crash the whole page into
+  // its error boundary. A real 401 still means "not signed in"; a persistent
+  // 4xx is a genuine client error and is surfaced.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await apiFetch<SessionUser>("/profile", { token });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        return null;
+      }
 
-    throw error;
+      const transient = !(error instanceof ApiError) || error.status >= 500;
+      if (!transient || attempt === 1) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
   }
+
+  // Unreachable — the loop either returns or throws.
+  return null;
 }
 
 export function isStaff(user: SessionUser): boolean {
