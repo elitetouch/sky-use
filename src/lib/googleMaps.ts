@@ -12,6 +12,42 @@ export function isGoogleMapsConfigured(): boolean {
   return Boolean(googleMapsApiKey());
 }
 
+export type ParsedAddress = {
+  line1: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+};
+
+function component(components: google.maps.GeocoderAddressComponent[], type: string): string {
+  return components.find((c) => c.types.includes(type))?.long_name ?? "";
+}
+
+/** Map a Google Places result onto our address-field shape. */
+export function parsePlaceAddress(place: google.maps.places.PlaceResult): ParsedAddress {
+  const components = place.address_components ?? [];
+  const streetNumber = component(components, "street_number");
+  const route = component(components, "route");
+  const line1 = [streetNumber, route].filter(Boolean).join(" ") || place.name || "";
+
+  const city =
+    component(components, "locality") ||
+    component(components, "postal_town") ||
+    component(components, "administrative_area_level_2");
+
+  const parsed: ParsedAddress = { line1 };
+  if (city) parsed.city = city;
+  const state = component(components, "administrative_area_level_1");
+  if (state) parsed.state = state;
+  const postal = component(components, "postal_code");
+  if (postal) parsed.postal_code = postal;
+  const country = component(components, "country");
+  if (country) parsed.country = country;
+
+  return parsed;
+}
+
 export function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("Google Maps can only load in the browser."));

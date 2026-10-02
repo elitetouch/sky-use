@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { isGoogleMapsConfigured } from "@/lib/googleMaps";
+import { usePlacesAutocomplete } from "@/lib/usePlacesAutocomplete";
 import { NinVerify } from "@/components/identity/NinVerify";
 import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
 import type { Address } from "@/lib/types";
@@ -38,6 +40,16 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const line1Ref = useRef<HTMLInputElement | null>(null);
+  usePlacesAutocomplete(line1Ref, (parsed) => {
+    setForm((prev) => ({
+      ...prev,
+      line1: parsed.line1,
+      city: parsed.city ?? prev.city,
+      state: parsed.state ?? prev.state,
+    }));
+  });
 
   function startCreate() {
     setEditingId(null);
@@ -160,11 +172,13 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
             />
           </div>
           <Field
+            ref={line1Ref}
             label="Address line 1"
             name="line1"
             required
             value={form.line1}
             onChange={update("line1")}
+            placeholder={isGoogleMapsConfigured() ? "Start typing an address…" : undefined}
             error={errors.line1?.[0]}
           />
           <Field label="Address line 2 (optional)" name="line2" value={form.line2} onChange={update("line2")} />
