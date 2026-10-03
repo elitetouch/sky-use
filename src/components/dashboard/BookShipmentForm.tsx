@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { Address } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
-import { isGoogleMapsConfigured } from "@/lib/googleMaps";
+import { isAddressAutocompleteEnabled } from "@/lib/geocode";
 import { usePlacesAutocomplete } from "@/lib/usePlacesAutocomplete";
 
 type Item = { description: string; quantity: string; weight: string; value: string };
@@ -980,7 +980,7 @@ function AddressSection({
           </label>
           <label className="col-span-2 block">
             <span className={fieldLabel}>Address line 1{requiredMark}</span>
-            <input ref={line1Ref} value={form.line1} onChange={set("line1")} placeholder={isGoogleMapsConfigured() ? "Start typing an address…" : "Street address"} className={`${smallInput} ${err("line1")}`} />
+            <input ref={line1Ref} value={form.line1} onChange={set("line1")} placeholder={isAddressAutocompleteEnabled() ? "Start typing an address…" : "Street address"} className={`${smallInput} ${err("line1")}`} />
           </label>
           <label className="col-span-2 block">
             <span className={fieldLabel}>Address line 2{optionalHint}</span>

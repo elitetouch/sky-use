@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
-import { isGoogleMapsConfigured } from "@/lib/googleMaps";
+import { isAddressAutocompleteEnabled } from "@/lib/geocode";
 import { usePlacesAutocomplete } from "@/lib/usePlacesAutocomplete";
 import { NinVerify } from "@/components/identity/NinVerify";
 import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
@@ -186,7 +186,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
             required
             value={form.line1}
             onChange={update("line1")}
-            placeholder={isGoogleMapsConfigured() ? "Start typing an address…" : undefined}
+            placeholder={isAddressAutocompleteEnabled() ? "Start typing an address…" : undefined}
             error={errors.line1?.[0]}
           />
           <Field label="Address line 2 (optional)" name="line2" value={form.line2} onChange={update("line2")} />

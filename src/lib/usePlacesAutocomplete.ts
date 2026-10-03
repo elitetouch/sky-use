@@ -2,11 +2,16 @@
 
 import { RefObject, useEffect, useRef } from "react";
 import {
-  isGoogleMapsConfigured,
-  loadGoogleMaps,
-  parseAddressComponents,
+  fetchAddressSuggestions,
+  isAddressAutocompleteEnabled,
+  type AddressSuggestion,
   type ParsedAddress,
-} from "@/lib/googleMaps";
+} from "@/lib/geocode";
+
+// NOTE: This used to drive Google Places (see src/lib/googleMaps.ts, kept for
+// reference). It now uses the free, keyless Photon/OpenStreetMap geocoder via
+// @/lib/geocode, so address autocomplete works without a billing-enabled Google
+// Cloud project. To switch back to Google, restore the googleMaps-based version.
 
 type Options = {
   /** Restrict suggestions to this country (ISO 3166-1 alpha-2, e.g. "NG"). */
@@ -14,14 +19,9 @@ type Options = {
 };
 
 /**
- * Attaches Google Places Autocomplete to an <input> and fills the parsed address
- * via `onPick`. Uses the **new Places API** (`AutocompleteSuggestion` + `Place`)
- * which runs on "Places API (New)" — the legacy `Autocomplete` widget is not
- * available to projects created after March 2025. Renders its own suggestion
- * dropdown (appended to <body>) so it works with our own labelled inputs.
- *
- * No-op (plain input) when the Maps key isn't configured or the API fails to
- * load, so the field always degrades to manual entry.
+ * Attaches address autocomplete to an <input> and fills the parsed address via
+ * `onPick`. Renders its own suggestion dropdown (appended to <body>) so it works
+ * with our own labelled inputs. Degrades silently to a plain input on failure.
  */
 export function usePlacesAutocomplete(
   inputRef: RefObject<HTMLInputElement | null>,
@@ -37,17 +37,16 @@ export function usePlacesAutocomplete(
 
   useEffect(() => {
     const input = inputRef.current;
-    if (!isGoogleMapsConfigured() || !input) {
+    if (!isAddressAutocompleteEnabled() || !input) {
       return;
     }
 
     let cancelled = false;
-    let places: google.maps.PlacesLibrary | null = null;
-    let sessionToken: google.maps.places.AutocompleteSessionToken | null = null;
     let debounce: ReturnType<typeof setTimeout> | null = null;
+    let controller: AbortController | null = null;
     let requestSeq = 0;
     let activeIndex = -1;
-    let suggestions: google.maps.places.AutocompleteSuggestion[] = [];
+    let suggestions: AddressSuggestion[] = [];
 
     // --- Dropdown element (plain DOM so it can live outside React). ----------
     const menu = document.createElement("div");
@@ -81,6 +80,13 @@ export function usePlacesAutocomplete(
       activeIndex = -1;
     }
 
+    function highlight() {
+      Array.from(menu.children).forEach((child, i) => {
+        (child as HTMLElement).style.background =
+          i === activeIndex ? "rgba(11,27,58,0.06)" : "transparent";
+      });
+    }
+
     function renderMenu() {
       menu.replaceChildren();
       if (suggestions.length === 0) {
@@ -88,8 +94,6 @@ export function usePlacesAutocomplete(
         return;
       }
       suggestions.forEach((s, i) => {
-        const p = s.placePrediction;
-        if (!p) return;
         const row = document.createElement("div");
         row.setAttribute("role", "option");
         Object.assign(row.style, {
@@ -102,14 +106,13 @@ export function usePlacesAutocomplete(
         } as CSSStyleDeclaration);
 
         const main = document.createElement("div");
-        main.textContent = p.mainText?.text ?? p.text.text;
+        main.textContent = s.label;
         main.style.fontWeight = "600";
         row.appendChild(main);
 
-        const secondary = p.secondaryText?.text;
-        if (secondary) {
+        if (s.secondary) {
           const sub = document.createElement("div");
-          sub.textContent = secondary;
+          sub.textContent = s.secondary;
           sub.style.fontSize = "12px";
           sub.style.color = "rgba(11,27,58,0.6)";
           row.appendChild(sub);
@@ -122,7 +125,7 @@ export function usePlacesAutocomplete(
         // mousedown (not click) so selection fires before the input blurs.
         row.addEventListener("mousedown", (e) => {
           e.preventDefault();
-          void choose(i);
+          choose(i);
         });
         menu.appendChild(row);
       });
@@ -130,51 +133,24 @@ export function usePlacesAutocomplete(
       menu.style.display = "block";
     }
 
-    function highlight() {
-      Array.from(menu.children).forEach((child, i) => {
-        (child as HTMLElement).style.background =
-          i === activeIndex ? "rgba(11,27,58,0.06)" : "transparent";
-      });
-    }
-
-    async function choose(index: number) {
-      const prediction = suggestions[index]?.placePrediction;
-      if (!prediction) return;
+    function choose(index: number) {
+      const picked = suggestions[index];
+      if (!picked) return;
       closeMenu();
-      try {
-        const place = prediction.toPlace();
-        await place.fetchFields({ fields: ["addressComponents", "formattedAddress"] });
-        if (cancelled) return;
-        const parsed = parseAddressComponents(
-          place.addressComponents ?? [],
-          place.formattedAddress ?? prediction.text.text,
-        );
-        if (parsed.line1) onPickRef.current(parsed);
-        // A fresh token must be minted for the next lookup session.
-        sessionToken = places ? new places.AutocompleteSessionToken() : null;
-      } catch {
-        // Lookup failed — leave whatever the user typed in place.
-      }
+      if (picked.address.line1) onPickRef.current(picked.address);
     }
 
-    async function fetchSuggestions(value: string) {
-      if (!places) return;
+    async function runSearch(value: string) {
       const seq = ++requestSeq;
-      if (!sessionToken) sessionToken = new places.AutocompleteSessionToken();
-
-      const request: google.maps.places.AutocompleteRequest = {
-        input: value,
-        sessionToken,
-        language: typeof navigator !== "undefined" ? navigator.language : undefined,
-      };
-      const region = countryRef.current;
-      if (region) request.includedRegionCodes = [region.toLowerCase()];
-
+      controller?.abort();
+      controller = new AbortController();
       try {
-        const { suggestions: result } =
-          await places.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+        const results = await fetchAddressSuggestions(value, {
+          country: countryRef.current,
+          signal: controller.signal,
+        });
         if (cancelled || seq !== requestSeq) return;
-        suggestions = result.filter((s) => s.placePrediction);
+        suggestions = results;
         activeIndex = -1;
         renderMenu();
       } catch {
@@ -191,7 +167,7 @@ export function usePlacesAutocomplete(
         closeMenu();
         return;
       }
-      debounce = setTimeout(() => void fetchSuggestions(value), 220);
+      debounce = setTimeout(() => void runSearch(value), 250);
     }
 
     function onKeyDown(e: KeyboardEvent) {
@@ -207,7 +183,7 @@ export function usePlacesAutocomplete(
       } else if (e.key === "Enter") {
         if (activeIndex >= 0) {
           e.preventDefault();
-          void choose(activeIndex);
+          choose(activeIndex);
         }
       } else if (e.key === "Escape") {
         closeMenu();
@@ -219,25 +195,17 @@ export function usePlacesAutocomplete(
       if (menu.style.display !== "none") positionMenu();
     };
 
-    loadGoogleMaps()
-      .then(async (google) => {
-        if (cancelled) return;
-        places = (await google.maps.importLibrary("places")) as google.maps.PlacesLibrary;
-        if (cancelled) return;
-        input.setAttribute("autocomplete", "off");
-        input.addEventListener("input", onInput);
-        input.addEventListener("keydown", onKeyDown);
-        input.addEventListener("blur", onBlur);
-        window.addEventListener("scroll", onReposition, true);
-        window.addEventListener("resize", onReposition);
-      })
-      .catch(() => {
-        // No key / load failure — the plain input keeps working.
-      });
+    input.setAttribute("autocomplete", "off");
+    input.addEventListener("input", onInput);
+    input.addEventListener("keydown", onKeyDown);
+    input.addEventListener("blur", onBlur);
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
 
     return () => {
       cancelled = true;
       if (debounce) clearTimeout(debounce);
+      controller?.abort();
       input.removeEventListener("input", onInput);
       input.removeEventListener("keydown", onKeyDown);
       input.removeEventListener("blur", onBlur);

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { countryCode } from "@/lib/countries";
-import { isGoogleMapsConfigured } from "@/lib/googleMaps";
+import { isAddressAutocompleteEnabled } from "@/lib/geocode";
 import { usePlacesAutocomplete } from "@/lib/usePlacesAutocomplete";
 
 export type AddressForm = {
@@ -94,7 +94,7 @@ export function AddressFieldset({
           value={value.line1}
           onChange={update("line1")}
           autoComplete="off"
-          placeholder={isGoogleMapsConfigured() ? "Start typing an address…" : undefined}
+          placeholder={isAddressAutocompleteEnabled() ? "Start typing an address…" : undefined}
           className={inputClass}
         />
       </div>
