@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject, useEffect, useRef } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 import {
   fetchAddressSuggestions,
   isAddressAutocompleteEnabled,
@@ -35,8 +35,21 @@ export function usePlacesAutocomplete(
     countryRef.current = options?.country ?? null;
   });
 
+  // Track the actual input element. The input may mount *after* this hook first
+  // runs — e.g. the receiver section starts on "Recent recipients" and only
+  // renders its line-1 field once the user switches to "New address". Mirroring
+  // inputRef.current into state re-runs the setup effect when the element truly
+  // appears or disappears, without re-attaching on every keystroke render.
+  const [node, setNode] = useState<HTMLInputElement | null>(null);
+  // Intentionally runs on every render to detect the ref attaching/detaching;
+  // the equality guard stops it from looping.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const input = inputRef.current;
+    if (inputRef.current !== node) setNode(inputRef.current);
+  });
+
+  useEffect(() => {
+    const input = node;
     if (!isAddressAutocompleteEnabled() || !input) {
       return;
     }
@@ -213,5 +226,5 @@ export function usePlacesAutocomplete(
       window.removeEventListener("resize", onReposition);
       menu.remove();
     };
-  }, [inputRef]);
+  }, [node, inputRef]);
 }
