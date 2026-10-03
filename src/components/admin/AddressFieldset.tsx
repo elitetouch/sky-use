@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { countryCode } from "@/lib/countries";
 import { isAddressAutocompleteEnabled } from "@/lib/geocode";
 import { usePlacesAutocomplete } from "@/lib/usePlacesAutocomplete";
 
@@ -49,18 +48,16 @@ export function AddressFieldset({
     valueRef.current = value;
   });
 
-  usePlacesAutocomplete(
-    line1Ref,
-    (parsed) => {
-      const next: AddressForm = { ...valueRef.current, line1: parsed.line1 };
-      if (parsed.city) next.city = parsed.city;
-      if (parsed.state) next.state = parsed.state;
-      if (parsed.postal_code) next.postal_code = parsed.postal_code;
-      if (parsed.country) next.country = parsed.country;
-      onChange(next);
-    },
-    { country: countryCode(value.country) },
-  );
+  // Same as the customer app: global (unrestricted) address autocomplete that
+  // fills line 1, city, state, postal code and country from the picked result.
+  usePlacesAutocomplete(line1Ref, (parsed) => {
+    const next: AddressForm = { ...valueRef.current, line1: parsed.line1 };
+    if (parsed.city) next.city = parsed.city;
+    if (parsed.state) next.state = parsed.state;
+    if (parsed.postal_code) next.postal_code = parsed.postal_code;
+    if (parsed.country) next.country = parsed.country;
+    onChange(next);
+  });
 
   function update(field: keyof AddressForm) {
     return (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...value, [field]: e.target.value });
