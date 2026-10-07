@@ -6,6 +6,7 @@ import type { PaginatedResult, User } from "@/lib/types";
 import { NoAccess } from "@/components/admin/NoAccess";
 import { CustomerSearch } from "@/components/admin/CustomerSearch";
 import { EditCustomerButton } from "@/components/admin/EditCustomerButton";
+import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
 import { Pagination } from "@/components/admin/Pagination";
 import { LinkButton } from "@/components/ui/Button";
 
@@ -64,6 +65,7 @@ export default async function AdminCustomersPage({
                 <th className="px-5 py-3">Name</th>
                 <th className="px-5 py-3">Email</th>
                 <th className="px-5 py-3">Phone</th>
+                <th className="px-5 py-3">Identity</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Joined</th>
                 {canEdit ? <th className="px-5 py-3 text-right">Actions</th> : null}
@@ -75,6 +77,15 @@ export default async function AdminCustomersPage({
                   <td className="px-5 py-4 font-semibold text-navy">{customer.name}</td>
                   <td className="px-5 py-4 text-body">{customer.email}</td>
                   <td className="px-5 py-4 text-body">{customer.phone ?? "—"}</td>
+                  <td className="px-5 py-4">
+                    {customer.nin_verified ? (
+                      <VerifiedBadge />
+                    ) : (
+                      <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-semibold text-body">
+                        Not verified
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-4">
                     {customer.status === "active" ? (
                       <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">

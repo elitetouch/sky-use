@@ -69,6 +69,8 @@ export type User = {
   status: string;
   roles: string[];
   created_at: string;
+  nin_verified?: boolean;
+  nin_masked?: string | null;
 };
 
 export type BusinessSetting = {

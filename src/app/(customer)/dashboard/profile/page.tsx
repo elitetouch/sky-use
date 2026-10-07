@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/session";
 import { ProfileForm } from "@/components/dashboard/ProfileForm";
+import { NinFaceVerify } from "@/components/identity/NinFaceVerify";
+import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -8,6 +10,7 @@ export const metadata: Metadata = {
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
+  const ninVerified = user?.nin_verified ?? false;
 
   return (
     <div>
@@ -19,8 +22,43 @@ export default async function ProfilePage() {
           initialName={user?.name ?? ""}
           initialPhone={user?.phone ?? ""}
           email={user?.email ?? ""}
-          ninVerified={user?.nin_verified ?? false}
+          ninVerified={ninVerified}
         />
+      </div>
+
+      <div className="mt-6 max-w-xl rounded-2xl border border-black/5 p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-navy">Identity verification (NIN)</h2>
+          {ninVerified ? (
+            <VerifiedBadge />
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-md bg-yellow/15 px-2 py-0.5 text-xs font-semibold text-yellow-700">
+              Not verified
+            </span>
+          )}
+        </div>
+
+        {ninVerified ? (
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-body">Your NIN</p>
+            <p className="mt-1 font-mono text-lg font-semibold tracking-[0.2em] text-navy">
+              {user?.nin_masked ?? "•••••••••••"}
+            </p>
+            <p className="mt-2 text-sm text-body">
+              Your identity is verified. For your security, only the last 4 digits are shown.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3">
+            <p className="text-sm text-body">
+              Verify your NIN with a quick live photo to start booking shipments. Once verified, your name is
+              locked to your verified identity.
+            </p>
+            <div className="mt-4">
+              <NinFaceVerify refreshOnVerify />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

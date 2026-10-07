@@ -428,7 +428,10 @@ export function AdminBookingForm({
             {selectedCustomer ? (
               <div className="flex items-center justify-between rounded-lg bg-[#f5f5f5] px-4 py-3">
                 <div>
-                  <p className="text-sm font-semibold text-navy">{selectedCustomer.name}</p>
+                  <p className="flex items-center gap-2 text-sm font-semibold text-navy">
+                    {selectedCustomer.name}
+                    {selectedCustomer.nin_verified ? <VerifiedBadge className="scale-90" /> : null}
+                  </p>
                   <p className="text-xs text-body">
                     {selectedCustomer.email}
                     {selectedCustomer.phone ? ` • ${selectedCustomer.phone}` : ""}
@@ -475,7 +478,10 @@ export function AdminBookingForm({
                           className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-[#f5f5f5]"
                         >
                           <span>
-                            <span className="block text-sm font-semibold text-navy">{customer.name}</span>
+                            <span className="flex items-center gap-2 text-sm font-semibold text-navy">
+                              {customer.name}
+                              {customer.nin_verified ? <VerifiedBadge className="scale-90" /> : null}
+                            </span>
                             <span className="block text-xs text-body">
                               {customer.email}
                               {customer.phone ? ` • ${customer.phone}` : ""}
@@ -554,7 +560,12 @@ export function AdminBookingForm({
         <p className="text-sm font-semibold text-navy">Sender identity (NIN)</p>
         <p className="mt-1 text-xs text-body">Verify the sender&apos;s NIN — we check it matches the sender&apos;s name above.</p>
         <div className="mt-2">
-          {sender.contact_name.trim() ? (
+          {selectedCustomer?.nin_verified ? (
+            <div className="flex items-center gap-2">
+              <VerifiedBadge />
+              <span className="text-xs text-body">This customer&apos;s identity is already verified.</span>
+            </div>
+          ) : sender.contact_name.trim() ? (
             <NinVerify name={sender.contact_name} />
           ) : (
             <p className="text-xs text-body">Enter the sender&apos;s name above to verify their NIN.</p>
