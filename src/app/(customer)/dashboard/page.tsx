@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { getCurrentUser, getSessionToken } from "@/lib/session";
+import { titleCase } from "@/lib/name";
 import type { PaginatedResult, Shipment, Wallet } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { LinkButton } from "@/components/ui/Button";
@@ -24,7 +25,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-navy">Welcome back, {user?.name.split(" ")[0]}</h1>
+      <h1 className="text-2xl font-bold text-navy">Welcome back, {titleCase(user?.name.split(" ")[0])}</h1>
       <p className="mt-1 text-body">Here&apos;s what&apos;s happening with your shipments.</p>
 
       {user && !user.nin_verified ? <NinAlert /> : null}

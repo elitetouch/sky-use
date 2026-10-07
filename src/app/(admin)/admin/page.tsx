@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { apiFetch } from "@/lib/api";
 import { getCurrentUser, getSessionToken, can } from "@/lib/session";
+import { titleCase } from "@/lib/name";
 import type { DashboardMetrics } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
 import { NoAccess } from "@/components/admin/NoAccess";
@@ -21,7 +22,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-navy">Welcome back, {user?.name.split(" ")[0]}</h1>
+      <h1 className="text-2xl font-bold text-navy">Welcome back, {titleCase(user?.name.split(" ")[0])}</h1>
       <p className="mt-1 text-body">Shipment and operations overview.</p>
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 import type { SessionUser } from "@/lib/session";
+import { titleCase } from "@/lib/name";
 
 export type NavItem = {
   href: string;
@@ -47,7 +48,7 @@ export function DashboardShell({
           {headerActions ? <div className="order-last w-full md:order-none md:w-auto">{headerActions}</div> : null}
           <div className="ml-auto flex items-center gap-4">
             <div className="text-right">
-              <p className="text-sm font-semibold text-navy">{user.name}</p>
+              <p className="text-sm font-semibold text-navy">{titleCase(user.name)}</p>
               <p className="text-xs capitalize text-body">
                 {user.roles.join(", ")}
               </p>
