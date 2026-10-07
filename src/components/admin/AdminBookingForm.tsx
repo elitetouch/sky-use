@@ -840,7 +840,7 @@ export function AdminBookingForm({
 
       {error && !showPreview ? <p className="text-sm text-red">{error}</p> : null}
 
-      <Button type="submit" variant="accent" size="lg" disabled={isSubmitting}>
+      <Button type="submit" variant="accent" disabled={isSubmitting}>
         Review &amp; Book Shipment
       </Button>
 
