@@ -7,6 +7,7 @@ import { NoAccess } from "@/components/admin/NoAccess";
 import { CustomerSearch } from "@/components/admin/CustomerSearch";
 import { EditCustomerButton } from "@/components/admin/EditCustomerButton";
 import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
+import { NinReveal } from "@/components/identity/NinReveal";
 import { Pagination } from "@/components/admin/Pagination";
 import { LinkButton } from "@/components/ui/Button";
 
@@ -25,6 +26,8 @@ export default async function AdminCustomersPage({
     return <NoAccess area="customers" />;
   }
   const canEdit = can(user, "customers.create");
+  // Only super admins (the "admin" role) may see customers' NINs.
+  const isSuperAdmin = user?.roles.includes("admin") ?? false;
   const token = await getSessionToken();
 
   const params = new URLSearchParams();
@@ -65,6 +68,7 @@ export default async function AdminCustomersPage({
                 <th className="px-5 py-3">Name</th>
                 <th className="px-5 py-3">Email</th>
                 <th className="px-5 py-3">Phone</th>
+                {isSuperAdmin ? <th className="px-5 py-3">NIN</th> : null}
                 <th className="px-5 py-3">Identity</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Joined</th>
@@ -77,6 +81,11 @@ export default async function AdminCustomersPage({
                   <td className="px-5 py-4 font-semibold text-navy">{customer.name}</td>
                   <td className="px-5 py-4 text-body">{customer.email}</td>
                   <td className="px-5 py-4 text-body">{customer.phone ?? "—"}</td>
+                  {isSuperAdmin ? (
+                    <td className="px-5 py-4">
+                      <NinReveal nin={customer.nin} />
+                    </td>
+                  ) : null}
                   <td className="px-5 py-4">
                     {customer.nin_verified ? (
                       <VerifiedBadge />

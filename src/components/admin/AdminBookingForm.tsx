@@ -565,6 +565,11 @@ export function AdminBookingForm({
               <VerifiedBadge />
               <span className="text-xs text-body">This customer&apos;s identity is already verified.</span>
             </div>
+          ) : selectedCustomer ? (
+            <NinVerify
+              userId={selectedCustomer.id}
+              onVerified={() => setSelectedCustomer((c) => (c ? { ...c, nin_verified: true } : c))}
+            />
           ) : sender.contact_name.trim() ? (
             <NinVerify name={sender.contact_name} />
           ) : (

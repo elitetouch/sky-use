@@ -43,6 +43,7 @@ export type SessionUser = {
   two_factor_method?: "totp" | "email" | null;
   nin_verified?: boolean;
   nin_masked?: string | null;
+  nin?: string | null;
 };
 
 /** Whether the user holds a given permission (admins hold all). */

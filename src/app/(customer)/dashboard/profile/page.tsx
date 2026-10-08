@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { ProfileForm } from "@/components/dashboard/ProfileForm";
 import { NinFaceVerify } from "@/components/identity/NinFaceVerify";
 import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
+import { NinReveal } from "@/components/identity/NinReveal";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -41,11 +42,11 @@ export default async function ProfilePage() {
         {ninVerified ? (
           <div className="mt-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-body">Your NIN</p>
-            <p className="mt-1 font-mono text-lg font-semibold tracking-[0.2em] text-navy">
-              {user?.nin_masked ?? "•••••••••••"}
-            </p>
+            <div className="mt-1">
+              <NinReveal nin={user?.nin ?? user?.nin_masked} />
+            </div>
             <p className="mt-2 text-sm text-body">
-              Your identity is verified. For your security, only the last 4 digits are shown.
+              Your identity is verified. Tap the eye to reveal or hide your NIN.
             </p>
           </div>
         ) : (

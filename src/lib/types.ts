@@ -72,6 +72,7 @@ export type User = {
   created_at: string;
   nin_verified?: boolean;
   nin_masked?: string | null;
+  nin?: string | null;
 };
 
 export type BusinessSetting = {
