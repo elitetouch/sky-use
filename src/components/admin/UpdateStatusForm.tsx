@@ -9,12 +9,10 @@ export function UpdateStatusForm({
   shipmentId,
   currentTemplateId,
   templates,
-  currentTrackingNumbers = [],
 }: {
   shipmentId: string;
   currentTemplateId: string | null;
   templates: StatusTemplate[];
-  currentTrackingNumbers?: string[];
 }) {
   const router = useRouter();
   const [templateId, setTemplateId] = useState(currentTemplateId ?? templates[0]?.id ?? "");
@@ -22,9 +20,7 @@ export function UpdateStatusForm({
   const [noteEdited, setNoteEdited] = useState(false);
   const [location, setLocation] = useState("");
   const [links, setLinks] = useState<string[]>([""]);
-  const [trackingNumbers, setTrackingNumbers] = useState<string[]>(
-    currentTrackingNumbers.length > 0 ? currentTrackingNumbers : [""],
-  );
+  const [trackingNumbers, setTrackingNumbers] = useState<string[]>([""]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,6 +61,7 @@ export function UpdateStatusForm({
 
       setLocation("");
       setLinks([""]);
+      setTrackingNumbers([""]);
       setNote("");
       setNoteEdited(false);
       router.refresh();

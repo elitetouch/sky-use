@@ -259,7 +259,9 @@ export default async function ShipmentReceiptPage({ params }: Props) {
 
           {/* Tracking numbers & links — recorded on status updates */}
           {(() => {
-            const trackingNumbers = (shipment.tracking_numbers ?? []).filter(Boolean);
+            const trackingNumbers = Array.from(
+              new Set((shipment.status_events ?? []).flatMap((e) => e.tracking_numbers ?? []).filter(Boolean)),
+            );
             const links = Array.from(
               new Set((shipment.status_events ?? []).flatMap((e) => e.links ?? []).filter(Boolean)),
             );

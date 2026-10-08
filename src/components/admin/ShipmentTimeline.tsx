@@ -172,17 +172,39 @@ export function ShipmentTimeline({
                   <p className="text-sm font-semibold text-navy">{event.label}</p>
                   {event.location ? <p className="text-xs text-body">{event.location}</p> : null}
                   {event.note ? <p className="text-xs text-body">{event.note}</p> : null}
-                  {(event.links?.length ? event.links : event.link ? [event.link] : []).map((l) => (
-                    <a
-                      key={l}
-                      href={l}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-0.5 block break-all text-xs font-semibold text-red hover:underline"
-                    >
-                      {l}
-                    </a>
-                  ))}
+
+                  {event.tracking_numbers && event.tracking_numbers.length > 0 ? (
+                    <div className="mt-1.5 space-y-0.5">
+                      {event.tracking_numbers.map((tn, i) => (
+                        <p key={tn} className="text-xs text-body">
+                          <span className="font-semibold text-navy">Tracking Number {i + 1}:</span>{" "}
+                          <span className="font-mono">{tn}</span>
+                        </p>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {(() => {
+                    const links = event.links?.length ? event.links : event.link ? [event.link] : [];
+                    if (links.length === 0) return null;
+                    return (
+                      <div className="mt-1.5 flex flex-wrap gap-2">
+                        {links.map((l, i) => (
+                          <a
+                            key={l}
+                            href={l}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md bg-red/10 px-2 py-1 text-xs font-semibold text-red hover:bg-red/15"
+                          >
+                            Tracking link{links.length > 1 ? ` ${i + 1}` : ""}
+                            <span aria-hidden>↗</span>
+                          </a>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
                   <p className="mt-1 text-xs text-body/70">{formatDateTime(event.created_at)}</p>
 
                   {canEdit ? (

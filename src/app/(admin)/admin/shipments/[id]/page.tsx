@@ -178,7 +178,6 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
               shipmentId={shipment.id}
               currentTemplateId={shipment.status_template_id}
               templates={templates}
-              currentTrackingNumbers={shipment.tracking_numbers ?? []}
             />
           ) : null}
           {can(user, "shipments.courier") ? (
