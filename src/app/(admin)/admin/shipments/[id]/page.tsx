@@ -178,17 +178,11 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
               shipmentId={shipment.id}
               currentTemplateId={shipment.status_template_id}
               templates={templates}
+              currentTrackingNumbers={shipment.tracking_numbers ?? []}
             />
           ) : null}
           {can(user, "shipments.courier") ? (
-            <AssignCourierForm
-              shipmentId={shipment.id}
-              currentCourier={shipment.courier}
-              currentTrackingNumbers={
-                shipment.courier_tracking_numbers ??
-                (shipment.courier_tracking_number ? [shipment.courier_tracking_number] : [])
-              }
-            />
+            <AssignCourierForm shipmentId={shipment.id} currentCourier={shipment.courier} />
           ) : null}
 
           {can(user, "shipments.delete") ? (

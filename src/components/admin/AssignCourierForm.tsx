@@ -13,23 +13,15 @@ const COURIERS = [
   { value: "sea_cargo", label: "Sea Cargo" },
 ];
 
-// Only these couriers carry an external waybill; the rest are tracked in-house.
-const TRACKED_COURIERS = ["dhl", "ups", "terminal"];
-
 export function AssignCourierForm({
   shipmentId,
   currentCourier,
-  currentTrackingNumbers,
 }: {
   shipmentId: string;
   currentCourier: string | null;
-  currentTrackingNumbers: string[];
 }) {
   const router = useRouter();
   const [courier, setCourier] = useState(currentCourier ?? "internal");
-  const [trackingNumbers, setTrackingNumbers] = useState<string[]>(
-    currentTrackingNumbers.length > 0 ? currentTrackingNumbers : [""],
-  );
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,10 +34,7 @@ export function AssignCourierForm({
       const response = await fetch(`/api/admin/shipments/${shipmentId}/assign-courier`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courier,
-          courier_tracking_numbers: trackingNumbers.map((t) => t.trim()).filter((t) => t !== ""),
-        }),
+        body: JSON.stringify({ courier }),
       });
 
       const json = await response.json();
@@ -77,37 +66,7 @@ export function AssignCourierForm({
         ))}
       </select>
 
-      {TRACKED_COURIERS.includes(courier) ? (
-        <div className="space-y-2">
-          {trackingNumbers.map((tn, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                value={tn}
-                onChange={(e) => setTrackingNumbers((prev) => prev.map((t, idx) => (idx === i ? e.target.value : t)))}
-                placeholder="Courier tracking / waybill number"
-                className="w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy"
-              />
-              {trackingNumbers.length > 1 ? (
-                <button
-                  type="button"
-                  onClick={() => setTrackingNumbers((prev) => prev.filter((_, idx) => idx !== i))}
-                  className="shrink-0 text-red hover:text-red/70"
-                  aria-label="Remove tracking number"
-                >
-                  ✕
-                </button>
-              ) : null}
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => setTrackingNumbers((prev) => [...prev, ""])}
-            className="text-xs font-semibold text-navy hover:text-red"
-          >
-            + Add another tracking number
-          </button>
-        </div>
-      ) : null}
+      <p className="text-xs text-body">Tracking numbers are recorded under Update Status.</p>
 
       {error ? <p className="text-sm text-red">{error}</p> : null}
 

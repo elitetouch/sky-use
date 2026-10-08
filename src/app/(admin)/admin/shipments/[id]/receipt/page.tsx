@@ -257,6 +257,35 @@ export default async function ShipmentReceiptPage({ params }: Props) {
             )}
           </section>
 
+          {/* Tracking numbers & links — recorded on status updates */}
+          {(() => {
+            const trackingNumbers = (shipment.tracking_numbers ?? []).filter(Boolean);
+            const links = Array.from(
+              new Set((shipment.status_events ?? []).flatMap((e) => e.links ?? []).filter(Boolean)),
+            );
+            if (trackingNumbers.length === 0 && links.length === 0) return null;
+            return (
+              <section className="mt-6 rounded-lg border p-5">
+                <h2 className="text-sm font-bold uppercase text-navy">Tracking &amp; Links</h2>
+                <div className="mt-3 space-y-1.5 text-sm text-gray-700">
+                  {trackingNumbers.map((tn, i) => (
+                    <p key={`tn-${i}`}>
+                      <span className="font-semibold text-navy">Tracking Number {i + 1}:</span> {tn}
+                    </p>
+                  ))}
+                  {links.map((link, i) => (
+                    <p key={`ln-${i}`}>
+                      <span className="font-semibold text-navy">Link {i + 1}:</span>{" "}
+                      <a href={link} target="_blank" rel="noopener noreferrer" className="text-sky underline break-all">
+                        {link}
+                      </a>
+                    </p>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
+
           {/* Items */}
           {shipment.items && shipment.items.length > 0 && (
             <section className="mt-6 rounded-lg border p-5">

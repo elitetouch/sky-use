@@ -104,6 +104,7 @@ export type AdminShipment = Shipment & {
   courier_label: string | null;
   courier_tracking_number: string | null;
   courier_tracking_numbers?: string[];
+  tracking_numbers?: string[];
   terminal_shipment_id: string | null;
   carrier: string | null;
   declared_value_kobo: number | null;

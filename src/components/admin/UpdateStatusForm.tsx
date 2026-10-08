@@ -9,10 +9,12 @@ export function UpdateStatusForm({
   shipmentId,
   currentTemplateId,
   templates,
+  currentTrackingNumbers = [],
 }: {
   shipmentId: string;
   currentTemplateId: string | null;
   templates: StatusTemplate[];
+  currentTrackingNumbers?: string[];
 }) {
   const router = useRouter();
   const [templateId, setTemplateId] = useState(currentTemplateId ?? templates[0]?.id ?? "");
@@ -20,6 +22,9 @@ export function UpdateStatusForm({
   const [noteEdited, setNoteEdited] = useState(false);
   const [location, setLocation] = useState("");
   const [links, setLinks] = useState<string[]>([""]);
+  const [trackingNumbers, setTrackingNumbers] = useState<string[]>(
+    currentTrackingNumbers.length > 0 ? currentTrackingNumbers : [""],
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,6 +52,7 @@ export function UpdateStatusForm({
           note: note || undefined,
           location: location || undefined,
           links: links.map((l) => l.trim()).filter((l) => l !== ""),
+          tracking_numbers: trackingNumbers.map((t) => t.trim()).filter((t) => t !== ""),
         }),
       });
 
@@ -128,6 +134,39 @@ export function UpdateStatusForm({
           className="text-xs font-semibold text-navy hover:text-red"
         >
           + Add another link
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-body">Tracking number(s)</p>
+        {trackingNumbers.map((tn, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              value={tn}
+              onChange={(e) =>
+                setTrackingNumbers((prev) => prev.map((t, idx) => (idx === i ? e.target.value : t)))
+              }
+              placeholder="Tracking number (optional)"
+              className={selectClass}
+            />
+            {trackingNumbers.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => setTrackingNumbers((prev) => prev.filter((_, idx) => idx !== i))}
+                className="shrink-0 text-red hover:text-red/70"
+                aria-label="Remove tracking number"
+              >
+                ✕
+              </button>
+            ) : null}
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setTrackingNumbers((prev) => [...prev, ""])}
+          className="text-xs font-semibold text-navy hover:text-red"
+        >
+          + Add another tracking number
         </button>
       </div>
 
