@@ -181,7 +181,11 @@ export default async function AdminShipmentDetailPage({ params }: { params: Prom
             />
           ) : null}
           {can(user, "shipments.courier") ? (
-            <AssignCourierForm shipmentId={shipment.id} currentCourier={shipment.courier} />
+            <AssignCourierForm
+              shipmentId={shipment.id}
+              currentCourier={shipment.courier}
+              currentTrackingNumber={shipment.courier_tracking_number}
+            />
           ) : null}
 
           {can(user, "shipments.delete") ? (
