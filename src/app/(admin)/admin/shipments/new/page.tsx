@@ -23,7 +23,11 @@ export default async function AdminBookShipmentPage() {
       <p className="mt-1 text-body">Book on behalf of a walk-in customer and print their receipt.</p>
 
       <div className="mt-6 max-w-3xl">
-        <AdminBookingForm offices={offices} canRecordPayment={can(user, "shipments.payment")} />
+        <AdminBookingForm
+          offices={offices}
+          canRecordPayment={can(user, "shipments.payment")}
+          canVerifyNin={can(user, "customers.nin")}
+        />
       </div>
     </div>
   );

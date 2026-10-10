@@ -22,12 +22,14 @@ export default async function AdminCustomersPage({
 }) {
   const { search, page, per_page: perPage } = await searchParams;
   const user = await getCurrentUser();
-  if (!can(user, "customers.view")) {
+  // Viewable with either the view or the add (edit) permission; super admins
+  // hold both via can().
+  if (!can(user, "customers.view") && !can(user, "customers.create")) {
     return <NoAccess area="customers" />;
   }
   const canEdit = can(user, "customers.create");
-  // Only super admins (the "admin" role) may see customers' NINs.
-  const isSuperAdmin = user?.roles.includes("admin") ?? false;
+  // The NIN column is gated by a permission assignable to any role.
+  const canViewNin = can(user, "customers.nin");
   const token = await getSessionToken();
 
   const params = new URLSearchParams();
@@ -68,7 +70,7 @@ export default async function AdminCustomersPage({
                 <th className="px-5 py-3">Name</th>
                 <th className="px-5 py-3">Email</th>
                 <th className="px-5 py-3">Phone</th>
-                {isSuperAdmin ? <th className="px-5 py-3">NIN</th> : null}
+                {canViewNin ? <th className="px-5 py-3">NIN</th> : null}
                 <th className="px-5 py-3">Identity</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Joined</th>
@@ -81,7 +83,7 @@ export default async function AdminCustomersPage({
                   <td className="px-5 py-4 font-semibold text-navy">{customer.name}</td>
                   <td className="px-5 py-4 text-body">{customer.email}</td>
                   <td className="px-5 py-4 text-body">{customer.phone ?? "—"}</td>
-                  {isSuperAdmin ? (
+                  {canViewNin ? (
                     <td className="px-5 py-4">
                       <NinReveal nin={customer.nin} />
                     </td>

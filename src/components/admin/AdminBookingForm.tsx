@@ -44,9 +44,11 @@ function addressToForm(a: Address): AddressForm {
 export function AdminBookingForm({
   offices,
   canRecordPayment,
+  canVerifyNin,
 }: {
   offices: Office[];
   canRecordPayment: boolean;
+  canVerifyNin: boolean;
 }) {
   const router = useRouter();
 
@@ -565,6 +567,8 @@ export function AdminBookingForm({
               <VerifiedBadge />
               <span className="text-xs text-body">This customer&apos;s identity is already verified.</span>
             </div>
+          ) : !canVerifyNin ? (
+            <p className="text-xs text-body">Not verified. You don&apos;t have permission to verify NIN.</p>
           ) : selectedCustomer ? (
             <NinVerify
               userId={selectedCustomer.id}
