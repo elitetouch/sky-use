@@ -45,6 +45,35 @@ body {
   font-family: var(--font-sans), sans-serif;
 }
 
+/*
+  Normalize form controls across browsers. Safari renders native <select>
+  chevrons and number-input spinners that clash with the app's styling, so we
+  strip the native look and draw a single clean chevron on selects.
+*/
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20' fill='none' stroke='%234c4c5b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 8l4 4 4-4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  /* important so the chevron clears the text even when a utility sets px-* */
+  padding-right: 2.25rem !important;
+}
+
+/* Hide number-input spinners (Safari/Chrome/Firefox) for a consistent look. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 @media print {
   @page {
     size: A4;
