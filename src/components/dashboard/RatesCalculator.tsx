@@ -59,7 +59,7 @@ export function RatesCalculator() {
       <div className="rounded-2xl border border-black/5 p-6">
         <p className="text-sm font-semibold text-navy">Where are you shipping from?</p>
         <div className="mt-2">
-          <LocationFields value={from} onChange={setFrom} />
+          <LocationFields value={from} onChange={setFrom} countryLocked />
         </div>
 
         <p className="mt-5 text-sm font-semibold text-navy">Where are you shipping to?</p>

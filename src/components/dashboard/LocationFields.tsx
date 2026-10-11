@@ -25,9 +25,12 @@ const selectClass =
 export function LocationFields({
   value,
   onChange,
+  countryLocked = false,
 }: {
   value: LocationValue;
   onChange: (next: LocationValue) => void;
+  /** Fix the country (e.g. shipping from is always Nigeria) — no country picker. */
+  countryLocked?: boolean;
 }) {
   const countries = Country.getAllCountries();
   const states = value.countryCode ? State.getStatesOfCountry(value.countryCode) : [];
@@ -36,21 +39,25 @@ export function LocationFields({
 
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <select
-        value={value.countryCode}
-        onChange={(e) => {
-          const c = countries.find((x) => x.isoCode === e.target.value);
-          onChange({ ...EMPTY_LOCATION, countryCode: c?.isoCode ?? "", countryName: c?.name ?? "" });
-        }}
-        className={selectClass}
-      >
-        <option value="">Country</option>
-        {countries.map((c) => (
-          <option key={c.isoCode} value={c.isoCode}>
-            {c.name}
-          </option>
-        ))}
-      </select>
+      {countryLocked ? (
+        <div className={`${selectClass} flex items-center bg-black/[0.03]`}>{value.countryName || "—"}</div>
+      ) : (
+        <select
+          value={value.countryCode}
+          onChange={(e) => {
+            const c = countries.find((x) => x.isoCode === e.target.value);
+            onChange({ ...EMPTY_LOCATION, countryCode: c?.isoCode ?? "", countryName: c?.name ?? "" });
+          }}
+          className={selectClass}
+        >
+          <option value="">Country</option>
+          {countries.map((c) => (
+            <option key={c.isoCode} value={c.isoCode}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      )}
 
       <select
         value={value.stateCode}
