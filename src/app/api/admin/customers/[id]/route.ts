@@ -7,3 +7,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   return proxyAuthed(`/admin/customers/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 }
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  return proxyAuthed(`/admin/customers/${id}`, { method: "DELETE" });
+}

@@ -6,6 +6,7 @@ import type { PaginatedResult, User } from "@/lib/types";
 import { NoAccess } from "@/components/admin/NoAccess";
 import { CustomerSearch } from "@/components/admin/CustomerSearch";
 import { EditCustomerButton } from "@/components/admin/EditCustomerButton";
+import { DeleteCustomerButton } from "@/components/admin/DeleteCustomerButton";
 import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
 import { NinReveal } from "@/components/identity/NinReveal";
 import { Pagination } from "@/components/admin/Pagination";
@@ -28,6 +29,8 @@ export default async function AdminCustomersPage({
     return <NoAccess area="customers" />;
   }
   const canEdit = can(user, "customers.create");
+  const canDelete = can(user, "customers.delete");
+  const canActOnRow = canEdit || canDelete;
   // The NIN column is gated by a permission assignable to any role.
   const canViewNin = can(user, "customers.nin");
   const token = await getSessionToken();
@@ -74,7 +77,7 @@ export default async function AdminCustomersPage({
                 <th className="px-5 py-3">Identity</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Joined</th>
-                {canEdit ? <th className="px-5 py-3 text-right">Actions</th> : null}
+                {canActOnRow ? <th className="px-5 py-3 text-right">Actions</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
@@ -109,9 +112,14 @@ export default async function AdminCustomersPage({
                     )}
                   </td>
                   <td className="px-5 py-4 text-body">{formatDate(customer.created_at)}</td>
-                  {canEdit ? (
+                  {canActOnRow ? (
                     <td className="px-5 py-4 text-right">
-                      <EditCustomerButton customer={customer} />
+                      <div className="flex items-center justify-end gap-3">
+                        {canEdit ? <EditCustomerButton customer={customer} /> : null}
+                        {canDelete ? (
+                          <DeleteCustomerButton customerId={customer.id} customerName={customer.name} />
+                        ) : null}
+                      </div>
                     </td>
                   ) : null}
                 </tr>
