@@ -14,15 +14,12 @@ type ServiceRate = {
   unavailable_reason: string | null;
 };
 
-const CURRENCIES = ["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR", "CAD", "AUD", "CNY", "AED"];
-
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
 
 export function RatesCalculator() {
   const [from, setFrom] = useState<LocationValue>({ ...EMPTY_LOCATION, countryCode: "NG", countryName: "Nigeria" });
   const [to, setTo] = useState<LocationValue>({ ...EMPTY_LOCATION });
-  const [currency, setCurrency] = useState("NGN");
   const [weight, setWeight] = useState("1");
   const [rates, setRates] = useState<ServiceRate[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,21 +67,9 @@ export function RatesCalculator() {
           <LocationFields value={to} onChange={setTo} />
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-semibold text-navy">Select currency</label>
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={inputClass}>
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-navy">Estimated weight (kg)</label>
-            <input type="number" min="0.1" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} className={inputClass} />
-          </div>
+        <div className="mt-5">
+          <label className="block text-sm font-semibold text-navy">Estimated weight (kg)</label>
+          <input type="number" min="0.1" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} className={inputClass} />
         </div>
 
         {error ? <p className="mt-3 text-sm text-red">{error}</p> : null}
