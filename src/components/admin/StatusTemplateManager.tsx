@@ -11,9 +11,16 @@ type FormState = {
   description: string;
   is_active: boolean;
   is_delivered: boolean;
+  notify_recipient: boolean;
 };
 
-const EMPTY_FORM: FormState = { title: "", description: "", is_active: true, is_delivered: false };
+const EMPTY_FORM: FormState = {
+  title: "",
+  description: "",
+  is_active: true,
+  is_delivered: false,
+  notify_recipient: false,
+};
 
 export function StatusTemplateManager({ initialTemplates }: { initialTemplates: StatusTemplate[] }) {
   const router = useRouter();
@@ -40,6 +47,7 @@ export function StatusTemplateManager({ initialTemplates }: { initialTemplates: 
       description: template.description ?? "",
       is_active: template.is_active,
       is_delivered: template.is_delivered,
+      notify_recipient: template.notify_recipient,
     });
     setErrors({});
     setError(null);
@@ -145,6 +153,14 @@ export function StatusTemplateManager({ initialTemplates }: { initialTemplates: 
               />
               Counts as delivered
             </label>
+            <label className="flex items-center gap-2 text-sm text-navy">
+              <input
+                type="checkbox"
+                checked={form.notify_recipient}
+                onChange={(e) => setForm((p) => ({ ...p, notify_recipient: e.target.checked }))}
+              />
+              Email the recipient when reached
+            </label>
           </div>
 
           {error ? <p className="text-sm text-red">{error}</p> : null}
@@ -180,6 +196,11 @@ export function StatusTemplateManager({ initialTemplates }: { initialTemplates: 
                   {template.is_delivered ? (
                     <span className="ml-2 rounded-full bg-navy/10 px-2 py-0.5 text-xs font-semibold text-navy">
                       Delivered
+                    </span>
+                  ) : null}
+                  {template.notify_recipient ? (
+                    <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                      Emails recipient
                     </span>
                   ) : null}
                 </td>

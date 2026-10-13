@@ -23,6 +23,7 @@ export type StatusTemplate = {
   sort_order: number;
   is_active: boolean;
   is_delivered: boolean;
+  notify_recipient: boolean;
   created_at: string;
   updated_at: string;
 };
