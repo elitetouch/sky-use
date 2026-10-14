@@ -178,7 +178,7 @@ export function ShipmentTimeline({
                       {event.tracking_numbers.map((tn, i) => (
                         <p key={tn} className="text-xs text-body">
                           <span className="font-semibold text-navy">Tracking Number {i + 1}:</span>{" "}
-                          <span className="font-mono">{tn}</span>
+                          <span className="font-mono font-bold text-navy">{tn}</span>
                         </p>
                       ))}
                     </div>

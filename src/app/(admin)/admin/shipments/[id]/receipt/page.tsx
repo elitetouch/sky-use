@@ -272,7 +272,7 @@ export default async function ShipmentReceiptPage({ params }: Props) {
                 <div className="mt-3 space-y-1.5 text-sm text-gray-700">
                   {trackingNumbers.map((tn, i) => (
                     <p key={`tn-${i}`}>
-                      <span className="font-semibold text-navy">Tracking Number {i + 1}:</span> {tn}
+                      <span className="font-semibold text-navy">Tracking Number {i + 1}:</span> <span className="font-bold text-navy">{tn}</span>
                     </p>
                   ))}
                   {links.map((link, i) => (
