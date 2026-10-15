@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { PermissionGroup, Role, Staff } from "@/lib/types";
 import { StaffAccessEditor } from "@/components/admin/StaffAccessEditor";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 export function StaffList({
   initialStaff,
@@ -15,6 +16,7 @@ export function StaffList({
   permissionGroups: PermissionGroup[];
 }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [staff, setStaff] = useState(initialStaff);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export function StaffList({
   }
 
   async function revoke(id: string) {
-    if (!confirm("Revoke this staff member? This deletes their account and lets the email be invited again.")) return;
+    if (!(await dialog.confirm({ title: "Revoke staff access?", message: "This deletes their account. The same email can be invited again later.", confirmLabel: "Revoke access", tone: "danger" }))) return;
 
     setErrors((prev) => ({ ...prev, [id]: "" }));
 

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Sarabun } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { DialogProvider } from "@/components/ui/DialogProvider";
 
 const sarabun = Sarabun({
   variable: "--font-sarabun",
@@ -40,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${sarabun.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        {children}
+        <DialogProvider>{children}</DialogProvider>
         <ServiceWorkerRegister />
       </body>
     </html>

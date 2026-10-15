@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { formatDateTime, toLagosInputValue } from "@/lib/datetime";
 import type { StatusEvent, StatusTemplate } from "@/lib/types";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-navy outline-none focus:border-navy";
@@ -21,6 +22,7 @@ export function ShipmentTimeline({
   canEdit: boolean;
 }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function ShipmentTimeline({
   }
 
   async function remove(eventId: string) {
-    if (!window.confirm("Delete this timeline entry? This can't be undone.")) return;
+    if (!(await dialog.confirm({ title: "Delete this timeline entry?", message: "It will be removed from the shipment's tracking history. This can't be undone.", confirmLabel: "Delete", tone: "danger" }))) return;
     setError(null);
     setBusyId(eventId);
     try {

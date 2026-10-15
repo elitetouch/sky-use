@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import type { Office } from "@/lib/types";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 type FormState = {
   name: string;
@@ -17,6 +18,7 @@ const EMPTY_FORM: FormState = { name: "", address: "", terms_and_conditions: "",
 
 export function OfficeManager({ initialOffices }: { initialOffices: Office[] }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [offices, setOffices] = useState(initialOffices);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -84,7 +86,7 @@ export function OfficeManager({ initialOffices }: { initialOffices: Office[] }) 
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this office?")) return;
+    if (!(await dialog.confirm({ title: "Delete this office?", message: "This can't be undone.", confirmLabel: "Delete", tone: "danger" }))) return;
 
     const response = await fetch(`/api/admin/offices/${id}`, { method: "DELETE" });
 
@@ -95,7 +97,7 @@ export function OfficeManager({ initialOffices }: { initialOffices: Office[] }) 
     }
 
     const json = await response.json();
-    alert(json.message ?? "Unable to delete office.");
+    await dialog.alert({ title: "Couldn't delete office", message: json.message ?? "Unable to delete office.", tone: "danger" });
   }
 
   return (

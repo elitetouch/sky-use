@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Country } from "country-state-city";
 import { Button } from "@/components/ui/Button";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 export type RateCardDetail = {
   carrier: string;
@@ -48,6 +49,7 @@ export function CarrierRateCardEditor({
   canManage: boolean;
 }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [detail, setDetail] = useState<RateCardDetail>(initial);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [extraWeights, setExtraWeights] = useState<number[]>([]);
@@ -171,14 +173,20 @@ export function CarrierRateCardEditor({
     flash(`Added ${wk(value)} kg — fill in its prices, then save.`);
   }
 
-  function removeWeight(weight: number) {
+  async function removeWeight(weight: number) {
     const hasSaved = zones.some((z) => original[cellKey(z, weight)] !== undefined);
     if (!hasSaved) {
       setExtraWeights((prev) => prev.filter((w) => wk(w) !== wk(weight)));
       setEdits((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !k.endsWith(`|${wk(weight)}`))));
       return;
     }
-    if (!window.confirm(`Remove all prices for ${wk(weight)} kg? This takes effect when you save.`)) return;
+    const ok = await dialog.confirm({
+      title: `Remove the ${wk(weight)} kg row?`,
+      message: "All prices in this row will be removed when you save.",
+      confirmLabel: "Remove row",
+      tone: "danger",
+    });
+    if (!ok) return;
     setEdits((prev) => {
       const next = { ...prev };
       for (const z of zones) next[cellKey(z, weight)] = "";
@@ -201,8 +209,14 @@ export function CarrierRateCardEditor({
     });
   }
 
-  function deleteZone(zone: number) {
-    if (!window.confirm(`Delete Zone ${zone}? Its prices and countries will be removed. This can't be undone.`)) return;
+  async function deleteZone(zone: number) {
+    const ok = await dialog.confirm({
+      title: `Delete Zone ${zone}?`,
+      message: "Its prices and countries will be removed. Those countries won't be quotable on this service until you add them to another zone. This can't be undone.",
+      confirmLabel: "Delete zone",
+      tone: "danger",
+    });
+    if (!ok) return;
     void run(
       `delete-${zone}`,
       () => fetch(`/api/admin/carrier-pricing/${carrier}/zones/${zone}`, { method: "DELETE" }),
@@ -210,10 +224,16 @@ export function CarrierRateCardEditor({
     );
   }
 
-  function uploadFull() {
+  async function uploadFull() {
     const file = fullUploadRef.current?.files?.[0];
     if (!file) return;
-    if (!window.confirm("Replace ALL prices for this carrier with this file? Zones not in the file will lose their prices.")) {
+    const ok = await dialog.confirm({
+      title: "Replace all prices?",
+      message: `Every price for ${detail.label} will be replaced with "${file.name}". Zones not in the file will lose their prices.`,
+      confirmLabel: "Replace all prices",
+      tone: "danger",
+    });
+    if (!ok) {
       if (fullUploadRef.current) fullUploadRef.current.value = "";
       return;
     }
@@ -238,8 +258,14 @@ export function CarrierRateCardEditor({
     });
   }
 
-  function clearAll() {
-    if (!window.confirm(`Clear ALL prices for ${detail.label}? Zones and countries are kept. This can't be undone.`)) return;
+  async function clearAll() {
+    const ok = await dialog.confirm({
+      title: "Clear all prices?",
+      message: `Every price for ${detail.label} will be deleted. Zones and countries are kept. This can't be undone.`,
+      confirmLabel: "Clear all prices",
+      tone: "danger",
+    });
+    if (!ok) return;
     void run(
       "clear",
       () => fetch(`/api/admin/carrier-pricing/${carrier}/rates`, { method: "DELETE" }),

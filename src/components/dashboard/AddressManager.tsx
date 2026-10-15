@@ -9,6 +9,7 @@ import { usePlacesAutocomplete } from "@/lib/usePlacesAutocomplete";
 import { NinVerify } from "@/components/identity/NinVerify";
 import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
 import type { Address } from "@/lib/types";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 type FormState = {
   label: string;
@@ -38,6 +39,7 @@ const EMPTY_FORM: FormState = {
 
 export function AddressManager({ initialAddresses }: { initialAddresses: Address[] }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [addresses, setAddresses] = useState(initialAddresses);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -118,7 +120,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this address?")) return;
+    if (!(await dialog.confirm({ title: "Delete this address?", message: "It will be removed from your saved addresses.", confirmLabel: "Delete", tone: "danger" }))) return;
 
     const response = await fetch(`/api/addresses/${id}`, { method: "DELETE" });
 

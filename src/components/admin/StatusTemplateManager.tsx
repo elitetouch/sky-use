@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import type { StatusTemplate } from "@/lib/types";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 type FormState = {
   title: string;
@@ -24,6 +25,7 @@ const EMPTY_FORM: FormState = {
 
 export function StatusTemplateManager({ initialTemplates }: { initialTemplates: StatusTemplate[] }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [templates, setTemplates] = useState(initialTemplates);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export function StatusTemplateManager({ initialTemplates }: { initialTemplates: 
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this milestone?")) return;
+    if (!(await dialog.confirm({ title: "Delete this milestone?", message: "It will no longer be available when updating a shipment's status.", confirmLabel: "Delete", tone: "danger" }))) return;
 
     const response = await fetch(`/api/admin/status-templates/${id}`, { method: "DELETE" });
 
@@ -103,7 +105,7 @@ export function StatusTemplateManager({ initialTemplates }: { initialTemplates: 
     }
 
     const json = await response.json();
-    alert(json.message ?? "Unable to delete milestone.");
+    await dialog.alert({ title: "Couldn't delete milestone", message: json.message ?? "Unable to delete milestone.", tone: "danger" });
   }
 
   const inputClass =

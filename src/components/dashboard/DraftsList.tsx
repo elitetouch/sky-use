@@ -4,15 +4,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatDateTime } from "@/lib/datetime";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 type Draft = { id: string; summary: string | null; updated_at: string };
 
 export function DraftsList({ drafts }: { drafts: Draft[] }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function remove(id: string) {
-    if (!window.confirm("Delete this draft?")) return;
+    if (!(await dialog.confirm({ title: "Delete this draft?", message: "You won't be able to resume this booking.", confirmLabel: "Delete", tone: "danger" }))) return;
     setBusyId(id);
     try {
       await fetch(`/api/shipment-drafts/${id}`, { method: "DELETE" });

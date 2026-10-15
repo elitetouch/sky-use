@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import type { Role, StaffInvitation } from "@/lib/types";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 export function InvitationManager({
   initialInvitations,
@@ -14,6 +15,7 @@ export function InvitationManager({
   roles: Role[];
 }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [invitations, setInvitations] = useState(initialInvitations);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -80,7 +82,7 @@ export function InvitationManager({
   }
 
   async function handleRevoke(id: string) {
-    if (!confirm("Revoke this invitation?")) return;
+    if (!(await dialog.confirm({ title: "Revoke this invitation?", message: "The invite link will stop working. You can send a new invitation later.", confirmLabel: "Revoke", tone: "danger" }))) return;
 
     const response = await fetch(`/api/admin/staff-invitations/${id}`, { method: "DELETE" });
 
