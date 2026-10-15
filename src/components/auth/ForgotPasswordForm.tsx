@@ -78,7 +78,7 @@ export function ForgotPasswordForm() {
 
   if (step === "email") {
     return (
-      <form onSubmit={requestCode} className="space-y-4">
+      <form method="post" onSubmit={requestCode} className="space-y-4">
         {error ? <div className="rounded-lg bg-red/10 px-4 py-3 text-sm text-red">{error}</div> : null}
 
         <Field
@@ -106,7 +106,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={submitReset} className="space-y-4">
+    <form method="post" onSubmit={submitReset} className="space-y-4">
       {notice ? <div className="rounded-lg bg-navy/5 px-4 py-3 text-sm text-navy">{notice}</div> : null}
       {error ? <div className="rounded-lg bg-red/10 px-4 py-3 text-sm text-red">{error}</div> : null}
 

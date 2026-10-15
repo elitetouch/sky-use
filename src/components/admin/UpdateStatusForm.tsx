@@ -74,7 +74,7 @@ export function UpdateStatusForm({
     "w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-black/5 p-6">
+    <form method="post" onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-black/5 p-6">
       <p className="text-sm font-semibold text-navy">Update Status</p>
 
       <select value={templateId} onChange={(e) => selectTemplate(e.target.value)} className={selectClass}>

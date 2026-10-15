@@ -107,7 +107,7 @@ export function OfficeManager({ initialOffices }: { initialOffices: Office[] }) 
           + Add Office
         </Button>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4 rounded-2xl border border-black/5 p-6">
+        <form method="post" onSubmit={handleSubmit} className="mt-4 space-y-4 rounded-2xl border border-black/5 p-6">
           <Field
             label="Office name"
             name="name"

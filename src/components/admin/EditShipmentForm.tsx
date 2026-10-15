@@ -151,7 +151,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form method="post" onSubmit={handleSubmit} className="space-y-6">
       <AddressFieldset title="Sender" value={sender} onChange={setSender} />
       <AddressFieldset title="Receiver" value={receiver} onChange={setReceiver} />
 

@@ -63,7 +63,7 @@ export function AssignCourierForm({
     "w-full rounded-lg border border-black/10 px-4 py-2.5 text-sm text-navy outline-none focus:border-navy";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-black/5 p-6">
+    <form method="post" onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-black/5 p-6">
       <p className="text-sm font-semibold text-navy">Assign Courier</p>
 
       <select value={courier} onChange={(e) => setCourier(e.target.value)} className={inputClass}>

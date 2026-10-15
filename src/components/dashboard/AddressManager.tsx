@@ -145,7 +145,7 @@ export function AddressManager({ initialAddresses }: { initialAddresses: Address
           + Add Address
         </Button>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4 rounded-2xl border border-black/5 p-6">
+        <form method="post" onSubmit={handleSubmit} className="mt-4 space-y-4 rounded-2xl border border-black/5 p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               label="Label (optional)"

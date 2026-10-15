@@ -38,7 +38,7 @@ export function FundWalletForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-black/5 p-6">
+    <form method="post" onSubmit={handleSubmit} className="rounded-2xl border border-black/5 p-6">
       <label className="block text-sm font-semibold text-navy">Amount to fund (NGN)</label>
       <input
         type="number"

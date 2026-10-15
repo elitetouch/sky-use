@@ -13,15 +13,24 @@ export function proxy(request: NextRequest) {
 
   if (isProtected && !hasSession) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+    loginUrl.searchParams.set("redirect", pathname + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAuthPage && hasSession) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // Note: we deliberately do NOT bounce /login or /register just because a
+  // session cookie exists — the cookie may hold an expired/revoked token, which
+  // caused a /login <-> /dashboard redirect loop. Those pages verify the
+  // session themselves and redirect only when it's genuinely valid.
+  if (isAuthPage) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // Tell server layouts which page was requested, so an expired session can be
+  // sent back here after logging in. (Always overwritten — never trusted from
+  // the client.)
+  const forwarded = new Headers(request.headers);
+  forwarded.set("x-pathname", pathname + request.nextUrl.search);
+  return NextResponse.next({ request: { headers: forwarded } });
 }
 
 export const config = {

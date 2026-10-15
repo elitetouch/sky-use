@@ -6,6 +6,7 @@ import { FormEvent, useState } from "react";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { OtpInput } from "@/components/ui/OtpInput";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 type Challenge = { token: string; method: "totp" | "email" };
 
@@ -24,7 +25,8 @@ export function LoginForm() {
   const [resendMsg, setResendMsg] = useState<string | null>(null);
 
   function done() {
-    router.push(searchParams.get("redirect") ?? "/dashboard");
+    // Only ever go to a same-site path — never an attacker-supplied URL.
+    router.push(safeRedirectPath(searchParams.get("redirect"), "/dashboard"));
     router.refresh();
   }
 
@@ -99,7 +101,7 @@ export function LoginForm() {
   if (challenge) {
     const showRecovery = challenge.method === "totp" && useRecovery;
     return (
-      <form onSubmit={handleChallenge} className="space-y-5">
+      <form method="post" onSubmit={handleChallenge} className="space-y-5">
         <p className="text-center text-sm text-body">
           {challenge.method === "email"
             ? "We emailed you a 6-digit code. Enter it below to finish signing in."
@@ -168,7 +170,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form method="post" onSubmit={handleSubmit} className="space-y-4">
       {justReset ? (
         <div className="rounded-lg bg-navy/5 px-4 py-3 text-sm text-navy">
           Your password has been reset. Please log in with your new password.

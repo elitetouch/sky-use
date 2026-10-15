@@ -379,7 +379,7 @@ export function AdminBookingForm({
       .join(", ");
 
   return (
-    <form onSubmit={handleReview} className="space-y-6">
+    <form method="post" onSubmit={handleReview} className="space-y-6">
       <div className="rounded-2xl border border-navy/15 bg-navy/[0.03] p-6">
         <p className="text-sm font-semibold text-navy">Import from Terminal</p>
         <p className="mt-1 text-xs text-body">

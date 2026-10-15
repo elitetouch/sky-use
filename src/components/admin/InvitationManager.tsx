@@ -99,7 +99,7 @@ export function InvitationManager({
           + Invite Staff
         </Button>
       ) : (
-        <form onSubmit={handleInvite} className="mt-4 space-y-4 rounded-2xl border border-black/5 p-6">
+        <form method="post" onSubmit={handleInvite} className="mt-4 space-y-4 rounded-2xl border border-black/5 p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               label="Full name"

@@ -48,7 +48,7 @@ export function ProfileForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form method="post" onSubmit={handleSubmit} className="space-y-4">
       <div>
         <div className="flex items-center justify-between">
           <label className="block text-sm font-semibold text-navy">Full name</label>

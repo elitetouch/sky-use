@@ -93,7 +93,7 @@ export function AcceptInviteForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form method="post" onSubmit={handleSubmit} className="space-y-4">
       <div className="rounded-lg bg-[#f5f5f7] px-4 py-3 text-sm text-body">
         <p>
           Joining as <span className="font-semibold capitalize text-navy">{invitation?.role}</span>

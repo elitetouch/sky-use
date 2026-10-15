@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 import { DashboardShell, type NavItem } from "@/components/layout/DashboardShell";
 import { CustomerTopActions } from "@/components/dashboard/CustomerTopActions";
+import { redirectToLogin } from "@/lib/auth-redirect";
 import { getCurrentUser, isStaff } from "@/lib/session";
 
 const NAV_ITEMS: NavItem[] = [
@@ -18,7 +19,7 @@ export default async function CustomerLayout({ children }: { children: ReactNode
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/login");
+    return redirectToLogin("/dashboard");
   }
 
   // Only send actual staff to the admin area. A user who is neither a customer

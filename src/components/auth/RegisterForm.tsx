@@ -55,7 +55,7 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form method="post" onSubmit={handleSubmit} className="space-y-4">
       {formError ? (
         <div className="rounded-lg bg-red/10 px-4 py-3 text-sm text-red">{formError}</div>
       ) : null}

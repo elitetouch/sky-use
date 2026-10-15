@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 import { DashboardShell, type NavItem } from "@/components/layout/DashboardShell";
+import { redirectToLogin } from "@/lib/auth-redirect";
 import { getCurrentUser, isStaff, can } from "@/lib/session";
 
 const NAV_ITEMS: (NavItem & { permission?: string; permissionAny?: string[] })[] = [
@@ -18,7 +19,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/login");
+    return redirectToLogin("/admin");
   }
 
   if (!isStaff(user)) {
