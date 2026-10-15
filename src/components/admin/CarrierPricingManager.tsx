@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type CarrierSummary = {
   carrier: string;
@@ -14,56 +14,22 @@ type CarrierSummary = {
 export function CarrierPricingManager({ canManage }: { canManage: boolean }) {
   const [rows, setRows] = useState<CarrierSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  async function load() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/carrier-pricing");
-      const json = await res.json();
-      setRows(json.data ?? []);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   useEffect(() => {
-    // Fetching the summary on mount is the intended behaviour here.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
-  }, []);
-
-  async function upload(carrier: string) {
-    setMessage(null);
-    setError(null);
-    const input = fileRefs.current[carrier];
-    const file = input?.files?.[0];
-    if (!file) {
-      setError("Choose a CSV file first.");
-      return;
-    }
-
-    setBusy(carrier);
-    try {
-      const form = new FormData();
-      form.append("carrier", carrier);
-      form.append("file", file);
-      const res = await fetch("/api/admin/carrier-pricing", { method: "POST", body: form });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.message ?? "Upload failed.");
-        return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/carrier-pricing");
+        const json = await res.json();
+        if (active) setRows(json.data ?? []);
+      } finally {
+        if (active) setLoading(false);
       }
-      setMessage(json.message ?? "Rates uploaded.");
-      if (input) input.value = "";
-      await load();
-    } finally {
-      setBusy(null);
-    }
-  }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="mt-6 space-y-4">
@@ -71,18 +37,11 @@ export function CarrierPricingManager({ canManage }: { canManage: boolean }) {
         <p className="font-semibold text-navy">How pricing works</p>
         <p className="mt-1">
           Each SkyFots service is priced from its carrier&apos;s rate card by <strong>destination zone</strong> and{" "}
-          <strong>weight</strong>. Zones (country → zone) are pre-loaded. Upload each carrier&apos;s rate card as a CSV
-          to set prices; re-upload any time prices change.
-        </p>
-        <p className="mt-2">
-          CSV format: first column <code>KG</code>, then one column per zone (<code>Zone 1</code>, <code>Zone 2</code>…),
-          each cell the total price in Naira. Example header:{" "}
-          <code className="text-navy">KG,Zone 1,Zone 2,Zone 3,…</code>
+          <strong>weight</strong>. Open a carrier to see its rates as a table, edit any price, add zones and weight
+          rows, choose which countries belong to each zone, upload prices for a single zone, download the current
+          rates, or clear them.
         </p>
       </div>
-
-      {message ? <p className="text-sm text-green-700">{message}</p> : null}
-      {error ? <p className="text-sm text-red">{error}</p> : null}
 
       {loading ? (
         <p className="text-sm text-body">Loading…</p>
@@ -95,7 +54,7 @@ export function CarrierPricingManager({ canManage }: { canManage: boolean }) {
                 <th className="px-5 py-3">Countries</th>
                 <th className="px-5 py-3">Zones</th>
                 <th className="px-5 py-3">Rates set</th>
-                {canManage ? <th className="px-5 py-3">Upload rate card (CSV)</th> : null}
+                <th className="px-5 py-3 text-right"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
@@ -115,28 +74,14 @@ export function CarrierPricingManager({ canManage }: { canManage: boolean }) {
                       </span>
                     )}
                   </td>
-                  {canManage ? (
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <input
-                          ref={(el) => {
-                            fileRefs.current[row.carrier] = el;
-                          }}
-                          type="file"
-                          accept=".csv,text/csv"
-                          className="text-xs text-body file:mr-2 file:rounded-lg file:border-0 file:bg-navy/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-navy"
-                        />
-                        <Button
-                          type="button"
-                          variant="primary"
-                          onClick={() => upload(row.carrier)}
-                          disabled={busy === row.carrier}
-                        >
-                          {busy === row.carrier ? "Uploading…" : "Upload"}
-                        </Button>
-                      </div>
-                    </td>
-                  ) : null}
+                  <td className="px-5 py-4 text-right">
+                    <Link
+                      href={`/admin/carrier-pricing/${row.carrier}`}
+                      className="inline-flex whitespace-nowrap rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-light"
+                    >
+                      {canManage ? "Manage rates" : "View rates"}
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>
