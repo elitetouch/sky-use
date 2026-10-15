@@ -7,7 +7,6 @@ const NAV_ITEMS: (NavItem & { permission?: string; permissionAny?: string[] })[]
   { href: "/admin", label: "Overview", permission: "dashboard.view" },
   { href: "/admin/shipments", label: "Shipments", permission: "shipments.view" },
   { href: "/admin/shipments/new", label: "Book Shipment", permission: "shipments.create" },
-  { href: "/admin/pricing", label: "Pricing Rules", permission: "pricing.view" },
   { href: "/admin/carrier-pricing", label: "Carrier Pricing", permission: "pricing.view" },
   { href: "/admin/status-templates", label: "Status Milestones", permission: "milestones.manage" },
   { href: "/admin/offices", label: "Offices", permission: "offices.manage" },

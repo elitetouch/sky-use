@@ -122,17 +122,6 @@ export type AdminShipment = Shipment & {
   office?: Office | null;
 };
 
-export type PricingRule = {
-  id: string;
-  service_level: string;
-  mode: string;
-  base_fee_kobo: number;
-  per_kg_kobo: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
 export type Staff = {
   id: string;
   name: string;
