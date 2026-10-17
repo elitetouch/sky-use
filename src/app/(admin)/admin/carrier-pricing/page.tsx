@@ -17,7 +17,8 @@ export default async function CarrierPricingPage() {
     <div>
       <h1 className="text-2xl font-bold text-navy">Carrier Pricing</h1>
       <p className="mt-1 text-body">
-        Zone-based rate cards for DHL, UPS &amp; FedEx (and Air/Sea cargo) that price customer bookings.
+        Each service&apos;s zone-based rate card. Prices are by destination zone &amp; weight and drive customer quotes.
+        Manage the services themselves (names, order, visibility) under <strong>Services</strong>.
       </p>
 
       <CarrierPricingManager canManage={can(user, "pricing.manage")} />

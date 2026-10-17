@@ -8,7 +8,7 @@ import { VerifiedBadge } from "@/components/identity/VerifiedBadge";
 import { NinVerify } from "@/components/identity/NinVerify";
 import type { Address, Office, User } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
-import { SERVICE_OPTIONS, DEFAULT_SERVICE } from "@/lib/services";
+import { SERVICE_OPTIONS, DEFAULT_SERVICE, fetchAdminServiceOptions, type ServiceOption } from "@/lib/services";
 import { DELIVERY_WINDOWS, formatEstimatedDelivery } from "@/lib/delivery";
 
 type CustomerMode = "existing" | "new";
@@ -109,6 +109,14 @@ export function AdminBookingForm({
   }
 
   const [serviceLevel, setServiceLevel] = useState<string>(DEFAULT_SERVICE);
+  const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([...SERVICE_OPTIONS]);
+
+  useEffect(() => {
+    fetchAdminServiceOptions().then((options) => {
+      setServiceOptions(options);
+      setServiceLevel((current) => (options.some((o) => o.value === current) ? current : options[0]?.value ?? current));
+    });
+  }, []);
   const [carrier, setCarrier] = useState("");
   const [terminalShipmentId, setTerminalShipmentId] = useState("");
   const [estimatedDate, setEstimatedDate] = useState("");
@@ -366,7 +374,7 @@ export function AdminBookingForm({
     }
   }
 
-  const serviceLabel = SERVICE_OPTIONS.find((s) => s.value === serviceLevel)?.label ?? serviceLevel;
+  const serviceLabel = serviceOptions.find((s) => s.value === serviceLevel)?.label ?? serviceLevel;
   const officeName = offices.find((o) => o.id === officeId)?.name ?? "—";
   const estimatedDelivery = formatEstimatedDelivery(estimatedDate, estimatedWindow);
   const customerName = customerMode === "existing" ? selectedCustomer?.name ?? "—" : newCustomer.name || "—";
@@ -613,7 +621,7 @@ export function AdminBookingForm({
           <div>
             <label className="block text-sm font-semibold text-navy">Service</label>
             <select value={serviceLevel} onChange={(e) => setServiceLevel(e.target.value)} className={inputClass}>
-              {SERVICE_OPTIONS.map((option) => (
+              {serviceOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AddressFieldset, EMPTY_ADDRESS, type AddressForm } from "@/components/admin/AddressFieldset";
 import type { AdminShipment, Address } from "@/lib/types";
 import { formatNaira } from "@/lib/types";
-import { SERVICE_OPTIONS } from "@/lib/services";
+import { SERVICE_OPTIONS, fetchAdminServiceOptions, type ServiceOption } from "@/lib/services";
 import { DELIVERY_WINDOWS } from "@/lib/delivery";
 
 type LineItem = { description: string; amount: string };
@@ -44,6 +44,16 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
   const router = useRouter();
 
   const [serviceLevel, setServiceLevel] = useState(shipment.service_level);
+  const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([...SERVICE_OPTIONS]);
+
+  useEffect(() => {
+    fetchAdminServiceOptions().then(setServiceOptions);
+  }, []);
+
+  // Keep the shipment's current service selectable even if it's now hidden/legacy.
+  const serviceChoices = serviceOptions.some((o) => o.value === serviceLevel)
+    ? serviceOptions
+    : [...serviceOptions, { value: shipment.service_level, label: shipment.service_label ?? shipment.service_level }];
   const [carrier, setCarrier] = useState(shipment.carrier ?? "");
   const [terminalShipmentId, setTerminalShipmentId] = useState(shipment.terminal_shipment_id ?? "");
   const [estimatedDate, setEstimatedDate] = useState(shipment.estimated_delivery_date ?? "");
@@ -162,7 +172,7 @@ export function EditShipmentForm({ shipment }: { shipment: AdminShipment }) {
           <div>
             <label className="block text-sm font-semibold text-navy">Service</label>
             <select value={serviceLevel} onChange={(e) => setServiceLevel(e.target.value)} className={inputClass}>
-              {SERVICE_OPTIONS.map((option) => (
+              {serviceChoices.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
