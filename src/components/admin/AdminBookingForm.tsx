@@ -82,7 +82,7 @@ export function AdminBookingForm({
     let active = true;
     (async () => {
       try {
-        const res = await fetch(`/api/admin/customers/${selectedCustomer.id}/addresses`);
+        const res = await fetch(`/api/admin/booking/customers/${selectedCustomer.id}/addresses`);
         const json = await res.json();
         if (active) setCustomerAddresses(res.ok ? json.data ?? [] : []);
       } catch {
@@ -100,7 +100,7 @@ export function AdminBookingForm({
     setReceiverSuggestions([]);
     if (!selectedCustomer) return;
     try {
-      const res = await fetch(`/api/admin/customers/${selectedCustomer.id}/receivers?sender_address_id=${a.id}`);
+      const res = await fetch(`/api/admin/booking/customers/${selectedCustomer.id}/receivers?sender_address_id=${a.id}`);
       const json = await res.json();
       if (res.ok) setReceiverSuggestions(json.data ?? []);
     } catch {
@@ -164,7 +164,7 @@ export function AdminBookingForm({
     if (searchTerm.trim() === "") return;
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/admin/customers?search=${encodeURIComponent(searchTerm.trim())}`);
+      const response = await fetch(`/api/admin/booking/customers?search=${encodeURIComponent(searchTerm.trim())}`);
       const json = await response.json();
       setSearchResults(json.data?.items ?? []);
     } finally {
@@ -234,7 +234,7 @@ export function AdminBookingForm({
       // account if the email matches, otherwise pre-fill a new customer.
       let matched: User | null = null;
       if (senderForm.email) {
-        const res = await fetch(`/api/admin/customers?search=${encodeURIComponent(senderForm.email)}`);
+        const res = await fetch(`/api/admin/booking/customers?search=${encodeURIComponent(senderForm.email)}`);
         const cj = await res.json();
         const items: User[] = cj.data?.items ?? [];
         matched = items.find((u) => u.email?.toLowerCase() === senderForm.email.toLowerCase()) ?? null;
